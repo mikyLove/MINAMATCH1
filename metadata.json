@@ -1,0 +1,6 @@
+{
+  "name": "MinaMatch",
+  "description": "Plataforma de orientación vocacional y selección de talento de precisión para el sector minero, con simulaciones de escenarios, buscador inteligente, seguimiento de semilleros y gestión de contratación.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

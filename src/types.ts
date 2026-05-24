@@ -1,0 +1,72 @@
+export interface Candidate {
+  id: string;
+  name: string;
+  title: string;
+  institution: string;
+  img: string;
+  expYears: number;
+  english: string;
+  languages: string[];
+  matchRating: number;
+  skills: string[];
+  altitudeFit: number; // msnm fitness e.g. 4500
+  certified: boolean;
+  warning?: string;
+  isTop5: boolean;
+  hasOsha: boolean;
+  regionalRadar?: string;
+  bio?: string;
+  aiInterviewTranscript?: {
+    question: string;
+    answer: string;
+  }[];
+}
+
+export interface Student {
+  id: string;
+  name: string;
+  badge: string;
+  program: string;
+  status: 'FINALIZADO' | 'EN_CURSO';
+  syllabus: {
+    id: string;
+    course: string;
+    completed: boolean;
+  }[];
+  verificationHash: string;
+  matchingScore: number;
+  retentionMonths: number;
+  signingBonus: number; // S/ value
+  timestamp: string;
+  validatorNode: string;
+  avatarUrl: string;
+}
+
+export interface ScenarioOption {
+  id: string;
+  text: string;
+  description: string;
+  impact: {
+    calma: number;
+    seguridad: number;
+    tiempo: string;
+    toleranciaFrio: number;
+    culturalFit: {
+      seguridad: number;
+      etica: number;
+      innovacion: number;
+    };
+  };
+}
+
+export interface Scenario {
+  id: string;
+  stage: string; // e.g. "ETAPA 3/5"
+  stageNum: number;
+  category: string; // ESCENARIO CRÍTICO, DESAFÍO OPERATIVO, etc.
+  title: string;
+  description: string;
+  imageUrl: string;
+  alertText: string;
+  options: ScenarioOption[];
+}
