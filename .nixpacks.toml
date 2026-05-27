@@ -1,0 +1,11 @@
+[phases.setup]
+commands = ["curl -fsSL https://get.pnpm.io/install.sh | sh -"]
+
+[phases.build]
+commands = ["pnpm install", "pnpm run build"]
+
+[phases.start]
+commands = ["pnpm start"]
+
+[settings]
+skip_caddy = true
