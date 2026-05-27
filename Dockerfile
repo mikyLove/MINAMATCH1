@@ -10,10 +10,8 @@ RUN apt-get update && apt-get install -y \
 RUN npm install -g pnpm@9
 
 WORKDIR /app
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile
-
 COPY . .
+RUN pnpm install --frozen-lockfile
 RUN pnpm run build
 
 EXPOSE 3001
