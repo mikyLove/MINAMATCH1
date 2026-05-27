@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python3"]
+nixPkgs = ["gcc", "python3"]
 
 [settings]
 skip_caddy = true
