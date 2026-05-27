@@ -15,6 +15,7 @@ export interface Candidate {
   isTop5: boolean;
   hasOsha: boolean;
   regionalRadar?: string;
+  socialFit?: number;
   bio?: string;
   aiInterviewTranscript?: {
     question: string;
@@ -61,12 +62,37 @@ export interface ScenarioOption {
 
 export interface Scenario {
   id: string;
-  stage: string; // e.g. "ETAPA 3/5"
+  stage: string;
   stageNum: number;
-  category: string; // ESCENARIO CRÍTICO, DESAFÍO OPERATIVO, etc.
+  category: string;
   title: string;
   description: string;
   imageUrl: string;
   alertText: string;
   options: ScenarioOption[];
+}
+
+export interface VocQuestionOption {
+  id: string;
+  text: string;
+  scores: Record<string, number>;
+}
+
+export interface VocQuestion {
+  id: string;
+  question: string;
+  dimension: string;
+  icon: string;
+  options: VocQuestionOption[];
+}
+
+export interface VocProfile {
+  id: string;
+  name: string;
+  title: string;
+  description: string;
+  skills: string[];
+  dailyTasks: string[];
+  demandLevel: string;
+  color: string;
 }
