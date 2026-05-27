@@ -1,11 +1,15 @@
 [phases.setup]
-commands = ["curl -fsSL https://get.pnpm.io/install.sh | sh -"]
+nixPkgs = ["pnpm"]
+commands = ["corepack enable", "corepack prepare pnpm@latest --activate"]
+
+[phases.install]
+cmd = "pnpm install"
 
 [phases.build]
-commands = ["pnpm install", "pnpm run build"]
+cmd = "pnpm run build"
 
 [phases.start]
-commands = ["pnpm start"]
+cmd = "pnpm start"
 
 [settings]
 skip_caddy = true

@@ -1,6 +1,9 @@
+packages:
+  - '.'
+
 allowBuilds:
   '@google/genai': false
   better-sqlite3: true
-  core-js: set this to true or false
+  core-js: false
   esbuild: false
   protobufjs: false
