@@ -171,3 +171,30 @@ V1 (src/, server/) ya no depende de archivos locales de tipos/validadores/config
 
 ### Observación
 - Docker no disponible en este entorno; PostgreSQL se instaló via `apt-get download` + extracción manual de debs, iniciado como usuario local.
+
+---
+
+## Fase 2C-1 — Repositorios tipados para PostgreSQL (2026-05-27)
+
+### Añadido
+- `packages/database/src/repositories/` — capa de acceso a datos desacoplada
+- `packages/database/src/repositories/candidates.repository.ts`
+- `packages/database/src/repositories/students.repository.ts`
+- `packages/database/src/repositories/chat.repository.ts`
+- `packages/database/src/repositories/users.repository.ts`
+- `packages/database/src/repositories/index.ts`
+
+### Modificado
+- `packages/database/src/index.ts` — barrel export con `repositories`
+
+### No tocado
+- `server/db.ts` — V1 SQLite sigue intacto
+- `src/`, `server/`, `data/` — sin cambios
+- Express routes — sin modificar
+
+### Validación
+- `pnpm install` ✅
+- `pnpm run build` ✅
+- `pnpm run lint` ⚠️ — solo 3 errores pre-existentes en `LandingPage.tsx`
+- TypeScript type-check ✅ — repositorios compilan correctamente
+- Exports verificados via tsx eval ✅
