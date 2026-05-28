@@ -4,9 +4,11 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import simpleRoutes from './routes/v2/simple.routes';
+import authRoutes from './routes/v2/auth.routes';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '..', '..', '..', '.env') });
+dotenv.config({ path: path.join(__dirname, '..', '..', '..', 'server', '.env'), override: true });
 
 const app = express();
 const PORT = process.env.V2_PORT || 3004;
@@ -18,8 +20,9 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10kb' }));
 
-// Montar rutas V2 con repositorios tipados
+// Rutas V2 con repositorios tipados (PostgreSQL)
 app.use('/api', simpleRoutes);
+app.use('/api/v2/auth', authRoutes);
 
 // Health check V2
 app.get('/api/v2/health', (_req, res) => {
@@ -34,4 +37,6 @@ app.listen(PORT, () => {
   console.log(`  GET /api/candidates/:id`);
   console.log(`  GET /api/students`);
   console.log(`  GET /api/scenarios`);
+  console.log(`  POST /api/v2/auth/login`);
+  console.log(`  GET /api/v2/auth/me`);
 });

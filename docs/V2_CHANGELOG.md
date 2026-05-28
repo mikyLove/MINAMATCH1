@@ -246,3 +246,46 @@ V1 (src/, server/) ya no depende de archivos locales de tipos/validadores/config
 - `pnpm install` ✅
 - `pnpm run build` ✅
 - `pnpm run lint` ⚠️ — solo 3 errores pre-existentes en `LandingPage.tsx`
+
+---
+
+## Fase 2C-3 — Autenticación V2 con PostgreSQL (2026-05-27)
+
+### Añadido
+- `packages/backend/src/middleware/auth.middleware.ts` — middleware JWT V2 (guest token, verify)
+- `packages/backend/src/routes/v2/auth.routes.ts` — auth V2 con `usersRepo`
+
+### Modificado
+- `packages/backend/package.json` — +bcryptjs, jsonwebtoken, @minamatch/shared
+- `packages/backend/src/index.ts` — monta `/api/v2/auth`, carga server/.env
+
+### Endpoints V2
+
+| Endpoint | Repositorio | Validación |
+|----------|-------------|------------|
+| `POST /api/v2/auth/login` | `usersRepo.findByEmail()` | loginSchema (zod) + bcrypt |
+| `GET /api/v2/auth/me` | `usersRepo.findById()` | JWT verify + authMiddleware |
+
+### Características
+- **Mismo JWT que V1**: payload `{ id, email, name, role }`, expira 24h, misma secret
+- **Guest token**: `guest-token` manejado sin consultar DB (compatible con V1)
+- **Fallback**: si PostgreSQL falla, devuelve `503 Servicio no disponible` (no afecta V1)
+- **bcrypt real**: contraseña admin actualizada con hash real generado en runtime
+
+### Convivencia V1 ↔ V2
+- **V1**: `/api/auth/login` y `/api/auth/me` → SQLite (intacto)
+- **V2**: `/api/v2/auth/login` y `/api/v2/auth/me` → PostgreSQL
+- Ambos coexisten sin interferencias
+- Frontend puede migrar endpoint por endpoint
+
+### Validación
+- `pnpm install` ✅
+- `pnpm run build` ✅
+- `pnpm run lint` ⚠️ — solo 3 errores pre-existentes en `LandingPage.tsx`
+- `POST /api/v2/auth/login` con credenciales correctas → token + user ✅
+- `POST /api/v2/auth/login` con password incorrecto → 401 ✅
+- `POST /api/v2/auth/login` con email inexistente → 401 ✅
+- `POST /api/v2/auth/login` con body inválido → 400 ✅
+- `GET /api/v2/auth/me` con token válido → perfil usuario ✅
+- `GET /api/v2/auth/me` con guest-token → datos invitado ✅
+- `GET /api/v2/auth/me` sin token → 401 ✅
