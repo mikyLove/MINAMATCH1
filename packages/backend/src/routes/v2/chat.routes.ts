@@ -24,7 +24,6 @@ Si no tienes la información específica, usa tu conocimiento general sobre mine
 
 const model = createChatModel(SYSTEM_PROMPT);
 
-// POST /api/v2/chat/message — enviar mensaje al chat IA
 router.post('/message', async (req: AuthRequest, res: Response) => {
   try {
     const parsed = chatMessageSchema.safeParse(req.body);
@@ -40,18 +39,16 @@ router.post('/message', async (req: AuthRequest, res: Response) => {
     }
 
     if (PROHIBITED_KEYWORDS.some(keyword => cleanMessage.toLowerCase().includes(keyword.toLowerCase()))) {
+      req.log?.warn({ userId }, 'Chat message blocked — prohibited keyword');
       return res.status(400).json({ error: 'El mensaje contiene términos no permitidos por la política de seguridad.' });
     }
 
     const provider = await getProvider();
 
-    // Limpiar mensajes antiguos (>10 minutos)
     await provider.chat.deleteOld(userId, 10);
 
-    // Recuperar historial
     const dbHistory = await provider.chat.findHistory(userId);
 
-    // Guardar mensaje del usuario
     await provider.chat.addMessage({ userId, role: 'user', content: cleanMessage, responseSource: null });
 
     let aiResponse: string;
@@ -79,7 +76,7 @@ router.post('/message', async (req: AuthRequest, res: Response) => {
         source = 'model';
         if (!aiResponse) aiResponse = 'Lo siento, no pude generar una respuesta.';
       } catch {
-        console.warn('[V2] Gemini model failed, using fallback response');
+        req.log?.warn({ userId }, 'Gemini model failed, using fallback response');
         aiResponse = getFallbackResponse(cleanMessage);
         source = 'fallback';
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -92,11 +89,10 @@ router.post('/message', async (req: AuthRequest, res: Response) => {
       res.write(aiResponse);
     }
 
-    // Guardar respuesta de IA
     await provider.chat.addMessage({ userId, role: 'assistant', content: aiResponse, responseSource: source });
     res.end();
   } catch (error) {
-    console.error('[V2] Chat message error:', error);
+    req.log?.error({ err: error }, 'Chat message error');
     if (!res.headersSent) {
       res.status(500).json({ error: 'Error processing chat message' });
     } else {
@@ -105,7 +101,6 @@ router.post('/message', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/v2/chat/history — historial del chat del usuario
 router.get('/history', async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -116,12 +111,11 @@ router.get('/history', async (req: AuthRequest, res: Response) => {
     const history = await provider.chat.findHistory(userId);
     res.json(history);
   } catch (err) {
-    console.error('[V2] GET /chat/history error:', err);
+    req.log?.error({ err }, 'GET /chat/history error');
     res.status(500).json({ error: 'Error al obtener historial' });
   }
 });
 
-// DELETE /api/v2/chat/history — limpiar historial del chat
 router.delete('/history', async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -131,9 +125,10 @@ router.delete('/history', async (req: AuthRequest, res: Response) => {
     const provider = await getProvider();
     await provider.chat.clearHistory(userId);
     await provider.chat.addMessage({ userId, role: 'assistant', content: 'Historial eliminado. ¿En qué puedo ayudarte?', responseSource: 'fallback' });
+    req.log?.info({ userId }, 'Chat history cleared');
     res.json({ success: true });
   } catch (err) {
-    console.error('[V2] DELETE /chat/history error:', err);
+    req.log?.error({ err }, 'DELETE /chat/history error');
     res.status(500).json({ error: 'Error al limpiar historial' });
   }
 });

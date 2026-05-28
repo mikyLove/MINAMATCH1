@@ -1,6 +1,9 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logger, setupErrorHandlers } from './logger';
+
+setupErrorHandlers(logger);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '..', '..', '..', '.env') });
@@ -10,19 +13,28 @@ const { app } = await import('./app');
 const PORT = process.env.V2_PORT || 3004;
 
 app.listen(PORT, () => {
-  console.log(`[V2] MinaMatch API running on http://localhost:${PORT}`);
-  console.log(`[V2] Database Provider: ${process.env.DATABASE_PROVIDER || 'auto'} (${process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'} — cambia con DATABASE_PROVIDER)`);
-  console.log(`[V2] Endpoints:`);
-  console.log(`  GET /api/candidates`);
-  console.log(`  GET /api/candidates/:id`);
-  console.log(`  GET /api/students`);
-  console.log(`  GET /api/scenarios`);
-  console.log(`  POST /api/v2/auth/login`);
-  console.log(`  GET /api/v2/auth/me`);
-  console.log(`  POST /api/v2/chat/message`);
-  console.log(`  GET /api/v2/chat/history`);
-  console.log(`  DELETE /api/v2/chat/history`);
-  console.log(`  POST /api/v2/agents/interview`);
-  console.log(`  POST /api/v2/agents/evaluate-scenario`);
-  console.log(`  POST /api/v2/agents/matching`);
+  const providerKind = process.env.DATABASE_PROVIDER || 'auto';
+  const resolvedDb = process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite';
+
+  logger.info({
+    port: PORT,
+    provider: providerKind,
+    resolvedDb,
+    nodeEnv: process.env.NODE_ENV || 'development',
+    logLevel: process.env.LOG_LEVEL || 'info',
+  }, 'MinaMatch V2 API started');
+
+  logger.info('Endpoints:');
+  logger.info('  GET /api/candidates');
+  logger.info('  GET /api/candidates/:id');
+  logger.info('  GET /api/students');
+  logger.info('  GET /api/scenarios');
+  logger.info('  POST /api/v2/auth/login');
+  logger.info('  GET /api/v2/auth/me');
+  logger.info('  POST /api/v2/chat/message');
+  logger.info('  GET /api/v2/chat/history');
+  logger.info('  DELETE /api/v2/chat/history');
+  logger.info('  POST /api/v2/agents/interview');
+  logger.info('  POST /api/v2/agents/evaluate-scenario');
+  logger.info('  POST /api/v2/agents/matching');
 });

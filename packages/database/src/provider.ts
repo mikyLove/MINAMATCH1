@@ -11,7 +11,7 @@ export async function getProvider(): Promise<DatabaseProvider> {
 
 export async function createProvider(kind?: DatabaseProviderKind): Promise<DatabaseProvider> {
   const resolvedKind = kind ?? resolveProviderKind();
-  console.log(`[DB Provider] Selected: ${resolvedKind}`);
+  process.stderr.write(JSON.stringify({ level: 'info', msg: `[DB Provider] Selected: ${resolvedKind}`, timestamp: new Date().toISOString() }) + '\n');
 
   switch (resolvedKind) {
     case 'postgres':

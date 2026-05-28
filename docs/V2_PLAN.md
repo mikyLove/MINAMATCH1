@@ -109,7 +109,7 @@
 2. ~~Fase 0B — Documentación de límites~~
 3. ~~Fase 1 (shared) — tipos y validadores~~
 4. ~~Fase 2 (database) — capa de datos~~
-5. ~~Fase 3 (backend) — nuevo backend~~ ← **completada** (pendiente scenarios, tests, logging)
+5. ~~Fase 3 (backend) — nuevo backend~~ ← **completada** (incluye Fase 3F: Pino logging)
 6. Fase 4 (frontend) — nuevo frontend ← **siguiente**
 7. Fase 5 (CI/CD) — integrar y deployar
 

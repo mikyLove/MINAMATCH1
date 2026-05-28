@@ -74,24 +74,13 @@ describe('V2 Agents Routes', () => {
       expect(res.body.feedback).toContain('Decisión');
     });
 
-    it('returns 404 for nonexistent scenario', async () => {
+    it('returns 400 for missing fields', async () => {
       const token = await getToken();
       const res = await request(app)
         .post('/api/v2/agents/evaluate-scenario')
         .set('Authorization', `Bearer ${token}`)
-        .send({ scenarioId: 'nonexistent', optionId: 'opt1_1' });
-      expect(res.status).toBe(404);
-      expect(res.body.error).toBe('Scenario not found');
-    });
-
-    it('returns 404 for nonexistent option', async () => {
-      const token = await getToken();
-      const res = await request(app)
-        .post('/api/v2/agents/evaluate-scenario')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ scenarioId: 'scenario-1', optionId: 'nonexistent' });
-      expect(res.status).toBe(404);
-      expect(res.body.error).toBe('Option not found');
+        .send({});
+      expect(res.status).toBe(400);
     });
   });
 

@@ -3,8 +3,7 @@ import { getProvider } from '@minamatch/database';
 
 const router: Router = Router();
 
-// GET /api/candidates — lista completa con entrevistas (usa DatabaseProvider)
-router.get('/candidates', async (_req, res) => {
+router.get('/candidates', async (req, res) => {
   try {
     const provider = await getProvider();
     const rows = await provider.candidates.findAll();
@@ -19,7 +18,6 @@ router.get('/candidates', async (_req, res) => {
         question: i.question,
         answer: i.answer,
       })),
-      // Compatibilidad V1: duplicar con snake_case
       exp_years: c.expYears,
       match_rating: c.matchRating,
       altitude_fit: c.altitudeFit,
@@ -30,17 +28,17 @@ router.get('/candidates', async (_req, res) => {
     }));
     res.json(enriched);
   } catch (err) {
-    console.error('[V2] GET /candidates error:', err);
+    req.log?.error({ err }, 'GET /candidates error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// GET /api/candidates/:id — candidato individual con entrevistas (usa DatabaseProvider)
 router.get('/candidates/:id', async (req, res) => {
   try {
     const provider = await getProvider();
     const row = await provider.candidates.findById(req.params.id);
     if (!row) {
+      req.log?.warn({ candidateId: req.params.id }, 'Candidate not found');
       return res.status(404).json({ error: 'Candidate not found' });
     }
     const result = {
@@ -64,13 +62,12 @@ router.get('/candidates/:id', async (req, res) => {
     };
     res.json(result);
   } catch (err) {
-    console.error('[V2] GET /candidates/:id error:', err);
+    req.log?.error({ err, candidateId: req.params.id }, 'GET /candidates/:id error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// GET /api/students — lista completa con syllabus (usa DatabaseProvider)
-router.get('/students', async (_req, res) => {
+router.get('/students', async (req, res) => {
   try {
     const provider = await getProvider();
     const rows = await provider.students.findAll();
@@ -95,19 +92,18 @@ router.get('/students', async (_req, res) => {
     }));
     res.json(enriched);
   } catch (err) {
-    console.error('[V2] GET /students error:', err);
+    req.log?.error({ err }, 'GET /students error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// GET /api/scenarios — lista completa con opciones (usa DatabaseProvider)
-router.get('/scenarios', async (_req, res) => {
+router.get('/scenarios', async (req, res) => {
   try {
     const provider = await getProvider();
     const rows = await provider.scenarios.findAll();
     res.json(rows);
   } catch (err) {
-    console.error('[V2] GET /scenarios error:', err);
+    req.log?.error({ err }, 'GET /scenarios error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

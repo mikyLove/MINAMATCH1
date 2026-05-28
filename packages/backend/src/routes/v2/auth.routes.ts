@@ -7,7 +7,6 @@ import { getJwtSecret, authMiddleware, AuthRequest } from '../../middleware/auth
 
 const router: Router = Router();
 
-// POST /api/v2/auth/login — autenticación con DatabaseProvider híbrido
 router.post('/login', async (req, res: Response) => {
   try {
     const parsed = loginSchema.safeParse(req.body);
@@ -21,11 +20,13 @@ router.post('/login', async (req, res: Response) => {
     const user = await provider.users.findByEmail(email);
 
     if (!user) {
+      req.log?.warn({ email }, 'Login failed — user not found');
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
     const valid = bcrypt.compareSync(password, user.password);
     if (!valid) {
+      req.log?.warn({ email }, 'Login failed — wrong password');
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
@@ -34,6 +35,8 @@ router.post('/login', async (req, res: Response) => {
       getJwtSecret(),
       { expiresIn: '24h' },
     );
+
+    req.log?.info({ userId: user.id, role: user.role }, 'Login successful');
 
     res.json({
       token,
@@ -46,12 +49,11 @@ router.post('/login', async (req, res: Response) => {
       },
     });
   } catch (err) {
-    console.error('[V2] POST /auth/login error:', err);
+    req.log?.error({ err }, 'POST /auth/login error');
     res.status(503).json({ error: 'Servicio de autenticación no disponible' });
   }
 });
 
-// GET /api/v2/auth/me — perfil del usuario autenticado
 router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -59,6 +61,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
     }
 
     if (req.user.role === 'guest') {
+      req.log?.info({ role: 'guest' }, 'Guest /auth/me');
       return res.json({
         id: req.user.id,
         name: req.user.name,
@@ -71,6 +74,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
     const provider = await getProvider();
     const user = await provider.users.findById(req.user.id);
     if (!user) {
+      req.log?.warn({ userId: req.user.id }, 'User not found in /auth/me');
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
@@ -82,7 +86,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
       avatar: user.avatar,
     });
   } catch (err) {
-    console.error('[V2] GET /auth/me error:', err);
+    req.log?.error({ err }, 'GET /auth/me error');
     res.status(503).json({ error: 'Servicio de autenticación no disponible' });
   }
 });

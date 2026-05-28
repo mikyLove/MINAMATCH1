@@ -701,4 +701,28 @@ if (model) {
 - `pnpm --filter @minamatch/backend test:all` → 49/49 ✅
 - `pnpm run build` ✅ (Vite build exitoso)
 - `pnpm run lint` ✅ (backend tsc --noEmit, 0 errores)
-- Smoke test manual con `DATABASE_PROVIDER=sqlite`: todos los endpoints responden correctamente``
+- Smoke test manual con `DATABASE_PROVIDER=sqlite`: todos los endpoints responden correctamente
+
+---
+
+## Fase 3F — Pino structured logging (2026-05-28)
+
+### Añadido
+- `packages/backend/src/logger.ts` — módulo de logging centralizado con Pino
+- `.env.example` — sección `[Logging]` con `LOG_LEVEL`
+
+### Modificado
+- `packages/backend/package.json` — dependencias: `pino`, `pino-http`; devDependency: `pino-pretty`
+- `packages/backend/src/app.ts` — agregado `app.use(httpLogger)` después de CORS
+- `packages/backend/src/index.ts` — startup con `logger.info()`, `setupErrorHandlers()` al inicio
+- `packages/backend/src/routes/v2/simple.routes.ts` — console.* → `req.log?.error/warn`
+- `packages/backend/src/routes/v2/auth.routes.ts` — console.* → `req.log?.info/warn/error`
+- `packages/backend/src/routes/v2/chat.routes.ts` — console.* → `req.log?.warn/error`
+- `packages/backend/src/routes/v2/agents.routes.ts` — console.* → `req.log?.warn/error`
+- `packages/database/src/provider.ts` — `console.log` → `process.stderr.write` con JSON
+- `packages/backend/src/__tests__/agents.routes.test.ts` — alineado con contrato actual
+
+### Validación
+- `npx tsc --noEmit --project packages/backend/tsconfig.json` ✅
+- `pnpm --filter @minamatch/backend test:sqlite` → 39/39 ✅
+- `pnpm run build` ✅ (Vite build exitoso)

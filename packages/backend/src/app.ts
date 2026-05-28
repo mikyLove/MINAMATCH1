@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { httpLogger } from './logger';
 import simpleRoutes from './routes/v2/simple.routes';
 import authRoutes from './routes/v2/auth.routes';
 import chatRoutes from './routes/v2/chat.routes';
@@ -13,6 +14,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json({ limit: '10kb' }));
+app.use(httpLogger);
 
 app.use('/api', simpleRoutes);
 app.use('/api/v2/auth', authRoutes);
