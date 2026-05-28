@@ -20,7 +20,10 @@
   },
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:sqlite": "vitest run",
+    "test:postgres": "vitest run --config vitest.postgres.config.ts",
+    "test:all": "vitest run && vitest run --config vitest.postgres.config.ts"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",

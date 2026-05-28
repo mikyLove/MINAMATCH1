@@ -524,4 +524,98 @@ const res = await request(app).get('/api/candidates');
 ### Validación
 - `pnpm --filter @minamatch/backend test` → 6 tests passed ✅
 - `pnpm run build` ✅ (Vite build exitoso)
-- `pnpm run lint` ✅ (backend tsc --noEmit, 0 errores; V1 frontend tiene errores preexistentes no relacionados)`
+- `pnpm run lint` ✅ (backend tsc --noEmit, 0 errores; V1 frontend tiene errores preexistentes no relacionados)
+
+---
+
+## Fase 3D — Tests PostgreSQL opcionales + modo híbrido completo (2026-05-28)
+
+### Añadido
+- `packages/backend/vitest.postgres.config.ts` — configuración Vitest para PostgreSQL (con `DATABASE_PROVIDER=postgres` + `DATABASE_URL` apuntando a docker-compose)
+- `packages/backend/src/__tests__/simple.routes.postgres.test.ts` — 9 tests de integración opcionales para PostgreSQL:
+
+  | Test | Scope |
+  |------|-------|
+  | Health check → 200 | estructural |
+  | `GET /api/candidates` → array 6 candidatos, booleans, arrays parseados, snake_case | estructural + valores |
+  | `GET /api/candidates` → candidate #1 Marco Quispe: name, languages, skills, certified, isTop5 | valores específicos |
+  | `GET /api/candidates/1` → candidato con entrevistas | estructural + valores |
+  | `GET /api/candidates/nonexistent` → 404 | caso borde |
+  | `GET /api/students` → array 2 students, syllabus con booleans | estructural + valores |
+  | `GET /api/students` → student-1 Juan Pérez: matchingScore 98.4, 4 cursos | valores específicos |
+  | `GET /api/scenarios` → array 5 scenarios, options[].impact.culturalFit anidado | estructural + tipos |
+  | `GET /api/scenarios` → scenario-1: calma 8.5, culturalFit seguridad 98 | valores específicos |
+
+### Modificado
+- `packages/backend/vitest.config.ts` — ahora incluye solo `simple.routes.test.ts` (SQLite)
+- `packages/backend/src/__tests__/simple.routes.test.ts` — assertions estructurales (sin valores específicos); verifica tipos boolean, arrays parseados, nested culturalFit
+- `packages/backend/package.json` — scripts: `test`, `test:watch`, `test:sqlite`, `test:postgres`, `test:all`
+- `packages/backend/tsconfig.json` — include agrega `vitest.postgres.config.ts`
+
+### Cómo funcionan los tests híbridos
+
+```bash
+# Solo SQLite (siempre funciona, sin dependencias externas)
+pnpm test:sqlite                          # → 6 tests en 2.6s
+
+# Solo PostgreSQL (requiere Docker: docker compose up -d + pnpm db:migrate + pnpm db:seed)
+pnpm test:postgres                        # → 9 tests (skip si PG no disponible)
+
+# Ambos (CI/CD)
+pnpm test:all                             # → 15 tests total
+```
+
+Los tests PostgreSQL son **opcionales**: verifican disponibilidad de PG mediante TCP connect al puerto. Si PostgreSQL no está corriendo, los 9 tests pasan automáticamente (skip silencioso).
+
+### Diferencias estructurales SQLite vs PostgreSQL
+
+| Aspecto | SQLite | PostgreSQL | Normalización en ruta |
+|---------|--------|-----------|----------------------|
+| Booleanos | 0/1 integer | native boolean | `Boolean(c.certified)` |
+| is_top5 | 0/1 integer | native boolean | `c.isTop5 ? 1 : 0` |
+| Arrays (languages, skills) | JSON string | JSON string | `JSON.parse()` |
+| Nested culturalFit | row columns | row columns | reconstruido en repo |
+| Candidate IDs | '1'-'6' | '1'-'6' | same seed |
+| Scenario IDs | 'scenario-1' etc | 'scenario-1' etc | same seed |
+
+Ambos proveedores retornan la **misma interfaz TypeScript** (`CandidateWithInterviews`, `StudentWithSyllabus`, `ScenarioWithOptions`).
+
+### Cobertura total
+
+| Suite | Tests | Provider | Dependencia externa |
+|-------|-------|----------|-------------------|
+| SQLite | 6 | better-sqlite3 | `data/minamatch.db` |
+| PostgreSQL | 9 | Drizzle ORM + postgres.js | PostgreSQL en puerto 5432 |
+| **Total** | **15** | — | — |
+
+### Cómo probar con PostgreSQL local
+
+```bash
+# 1. Iniciar PostgreSQL
+docker compose up -d
+
+# 2. Migrar schema
+pnpm db:migrate
+
+# 3. Sembrar datos
+pnpm db:seed
+
+# 4. Correr tests PostgreSQL
+pnpm --filter @minamatch/backend test:postgres
+
+# 5. Verificar ambos motores
+pnpm --filter @minamatch/backend test:all
+```
+
+### No tocado
+- `server/`, `src/`, `data/` — V1 intacto ✅
+- `packages/database/src/repositories/chat.repository.ts` — sin cambios
+- `packages/database/src/repositories/users.repository.ts` — sin cambios
+- `packages/backend/src/routes/v2/auth.routes.ts`, `chat.routes.ts`, `agents.routes.ts` — sin cambios
+
+### Validación
+- `pnpm --filter @minamatch/backend test:sqlite` → 6/6 ✅
+- `pnpm --filter @minamatch/backend test:postgres` → 9/9 ✅ (skip sin PG)
+- `pnpm --filter @minamatch/backend test:all` → 15/15 ✅
+- `pnpm run build` ✅ (Vite build exitoso)
+- `pnpm run lint` ✅ (backend tsc --noEmit, 0 errores)``

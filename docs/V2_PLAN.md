@@ -71,7 +71,7 @@
 - [x] Rutas simples conectadas al DatabaseProvider (candidates, students, scenarios)
 - [x] Modo híbrido PostgreSQL / SQLite según `DATABASE_PROVIDER`
 - [x] Scenarios migrados al provider (IScenariosRepo con findAll y findById)
-- [x] Tests de integración con Vitest + Supertest (6 tests, SQLite)
+- [x] Tests de integración con Vitest + Supertest (6 SQLite + 9 PostgreSQL estructurales)
 - [x] Runtime: tsx
 
 ### Fase 4 — frontend: React V2 ❌

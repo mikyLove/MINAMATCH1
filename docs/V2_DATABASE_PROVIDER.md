@@ -72,14 +72,20 @@ En desarrollo, si `DATABASE_PROVIDER` no está definido y `DATABASE_URL` no apun
 
 | Archivo | Propósito |
 |---------|-----------|
-| `packages/database/src/provider.types.ts` | Interfaces comunes (`ICandidatesRepo`, `IStudentsRepo`, `IUsersRepo`, `IChatRepo`, `DatabaseProvider`) |
+| `packages/database/src/provider.types.ts` | Interfaces comunes (`ICandidatesRepo`, `IStudentsRepo`, `IUsersRepo`, `IChatRepo`, `IScenariosRepo`, `DatabaseProvider`) |
 | `packages/database/src/provider.ts` | Factory `createProvider()` + singleton `getProvider()` |
 | `packages/database/src/sqlite/client.ts` | Cliente SQLite (conexión a `data/minamatch.db`) |
 | `packages/database/src/sqlite/candidates.repository.ts` | Implementación SQLite de `ICandidatesRepo` |
 | `packages/database/src/sqlite/students.repository.ts` | Implementación SQLite de `IStudentsRepo` |
 | `packages/database/src/sqlite/users.repository.ts` | Implementación SQLite de `IUsersRepo` |
 | `packages/database/src/sqlite/chat.repository.ts` | Implementación SQLite de `IChatRepo` |
+| `packages/database/src/sqlite/scenarios.repository.ts` | Implementación SQLite de `IScenariosRepo` |
 | `packages/database/src/sqlite/index.ts` | Barrel export |
+| `packages/database/src/repositories/candidates.repository.ts` | Implementación PostgreSQL de `ICandidatesRepo` (Drizzle) |
+| `packages/database/src/repositories/students.repository.ts` | Implementación PostgreSQL de `IStudentsRepo` (Drizzle) |
+| `packages/database/src/repositories/users.repository.ts` | Implementación PostgreSQL de `IUsersRepo` (Drizzle) |
+| `packages/database/src/repositories/chat.repository.ts` | Implementación PostgreSQL de `IChatRepo` (Drizzle) |
+| `packages/database/src/repositories/scenarios.repository.ts` | Implementación PostgreSQL de `IScenariosRepo` (Drizzle) |
 
 ## ¿Por qué mantener SQLite?
 
@@ -88,8 +94,34 @@ En desarrollo, si `DATABASE_PROVIDER` no está definido y `DATABASE_URL` no apun
 3. **Fallback**: si PostgreSQL se cae, SQLite mantiene la app funcional
 4. **Compatibilidad V1**: el archivo `data/minamatch.db` de V1 se reutiliza
 
-## Pendiente para Fase 2D o posterior
+## Tests de integración
 
-- Conectar las rutas Express V2 al provider (actualmente usan `chatRepo`, `candidatesRepo` directamente)
-- Migrar las rutas V2 para usar `getProvider().candidates.findAll()` en lugar de `candidatesRepo.findAll()`
+El provider se valida con dos suites de tests independientes:
+
+### SQLite (6 tests)
+```bash
+pnpm --filter @minamatch/backend test:sqlite
+```
+- Tests estructurales contra `data/minamatch.db`
+- Sin dependencias externas
+- Verifica: tipos boolean, arrays parseados (languages, skills), nested `culturalFit`, snake_case compat
+
+### PostgreSQL (9 tests, opcionales)
+```bash
+DATABASE_URL="postgres://minamatch:minamatch_dev@localhost:5432/minamatch_v2" \
+  pnpm --filter @minamatch/backend test:postgres
+```
+- Tests estructurales + valores específicos contra PostgreSQL
+- Requiere: `docker compose up -d` + `pnpm db:migrate` + `pnpm db:seed`
+- Skip automático si PostgreSQL no está disponible (TCP connect al puerto 5432)
+- Verifica: mismos tipos, booleans, arrays, nested `culturalFit`, y valores exactos del seed
+
+### Ambos
+```bash
+pnpm --filter @minamatch/backend test:all    # 15 tests total
+```
+
+## Pendiente para Fase 3E o posterior
+
+- Conectar auth/chat/agents al provider (actualmente usan repos directamente)
 - Estrategia de sincronización entre PostgreSQL y SQLite
