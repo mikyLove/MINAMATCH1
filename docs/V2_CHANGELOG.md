@@ -289,3 +289,45 @@ V1 (src/, server/) ya no depende de archivos locales de tipos/validadores/config
 - `GET /api/v2/auth/me` con token válido → perfil usuario ✅
 - `GET /api/v2/auth/me` con guest-token → datos invitado ✅
 - `GET /api/v2/auth/me` sin token → 401 ✅
+
+---
+
+## Fase 2C-4 — Chat y Agents V2 con PostgreSQL + Gemini (2026-05-27)
+
+### Añadido
+- `packages/backend/src/services/gemini.ts` — cliente V2 para `@google/genai` v2.6.0 (nueva API `models.generateContent`, `chats.create`)
+- `packages/backend/src/routes/v2/chat.routes.ts` — chat V2 con `chatRepo`, streaming y fallback
+- `packages/backend/src/routes/v2/agents.routes.ts` — agents V2 con `candidatesRepo`, `getDb()` y `evaluationModel`
+
+### Modificado
+- `packages/backend/package.json` — +`@google/genai` como dependencia
+- `packages/backend/src/index.ts` — monta `/api/v2/chat` y `/api/v2/agents`
+
+### Bug corregido (V1)
+- `server/routes/agents.ts` usaba `aiModel.generateContent()` pero `aiModel` no estaba definido (solo existía `evaluationModel`). En V2 se usa `evaluationModel.generateContent()` correctamente.
+
+### Endpoints V2
+
+| Endpoint | Repositorio/Servicio | Diferencias con V1 |
+|----------|---------------------|-------------------|
+| `POST /api/v2/chat/message` | `chatRepo` + Gemini streaming | ✅ usando repositorio Drizzle |
+| `GET /api/v2/chat/history` | `chatRepo.findHistory()` | ✅ usando repositorio Drizzle |
+| `DELETE /api/v2/chat/history` | `chatRepo.clearHistory()` | ✅ usando repositorio Drizzle |
+| `POST /api/v2/agents/interview` | `candidatesRepo.findById()` | ✅ sin `aiModel` bug, columnas camelCase |
+| `POST /api/v2/agents/evaluate-scenario` | `getDb()` + schema Drizzle | ✅ usando Drizzle queries |
+| `POST /api/v2/agents/matching` | `candidatesRepo.findAll()` | ✅ columnas camelCase (matchRating, expYears, etc.) |
+
+### Adaptación a `@google/genai` v2.6.0
+- `getGenerativeModel()` fue eliminado; se usa `genAI.models.generateContent()` para no-streaming y `genAI.chats.create()` para sesiones de chat
+- `generateContent()` devuelve `GenerateContentResponse` con `.text` getter (antes era `.text()` método)
+- `sendMessageStream()` recibe `{ message }` como objeto (antes string plano)
+- `sendMessageStream()` devuelve `AsyncGenerator` directo (antes `{ stream }`)
+- `GoogleGenAI` constructor recibe `{ apiKey }` como objeto (antes string plano)
+
+### Validación
+- `pnpm install` ✅
+- `pnpm run build` ✅
+- `TypeScript type-check` ✅ — 0 errores
+- `curl /api/v2/health` ✅ — servidor V2 arranca y responde
+- `curl /api/v2/chat/message` ⏳ — requiere PostgreSQL funcionando
+- `curl /api/v2/agents/interview` ⏳ — requiere PostgreSQL funcionando`

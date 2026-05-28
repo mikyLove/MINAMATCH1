@@ -5,6 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import simpleRoutes from './routes/v2/simple.routes';
 import authRoutes from './routes/v2/auth.routes';
+import chatRoutes from './routes/v2/chat.routes';
+import agentsRoutes from './routes/v2/agents.routes';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '..', '..', '..', '.env') });
@@ -23,6 +25,8 @@ app.use(express.json({ limit: '10kb' }));
 // Rutas V2 con repositorios tipados (PostgreSQL)
 app.use('/api', simpleRoutes);
 app.use('/api/v2/auth', authRoutes);
+app.use('/api/v2/chat', chatRoutes);
+app.use('/api/v2/agents', agentsRoutes);
 
 // Health check V2
 app.get('/api/v2/health', (_req, res) => {
@@ -39,4 +43,10 @@ app.listen(PORT, () => {
   console.log(`  GET /api/scenarios`);
   console.log(`  POST /api/v2/auth/login`);
   console.log(`  GET /api/v2/auth/me`);
+  console.log(`  POST /api/v2/chat/message`);
+  console.log(`  GET /api/v2/chat/history`);
+  console.log(`  DELETE /api/v2/chat/history`);
+  console.log(`  POST /api/v2/agents/interview`);
+  console.log(`  POST /api/v2/agents/evaluate-scenario`);
+  console.log(`  POST /api/v2/agents/matching`);
 });

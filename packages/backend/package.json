@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.6.0",
     "@minamatch/database": "workspace:*",
     "@minamatch/shared": "workspace:*",
     "bcryptjs": "^3.0.3",
