@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Bot, User, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BASE_URL } from '../api';
+import { v2FetchChatHistory, v2SendChatMessage, v2ClearChatHistory } from '../lib/api';
 
 const MIN_LENGTH = 3;
 const MAX_LENGTH = 2000;
@@ -11,12 +11,6 @@ interface ChatMessage {
   content: string;
 }
 
-function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem('minamatch_token');
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  return headers;
-}
 
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,8 +39,7 @@ export default function ChatBot() {
 
   const fetchHistory = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/api/chat/history`, { headers: getAuthHeaders() });
-      const data = await res.json();
+      const data = await v2FetchChatHistory();
       setMessages(data);
     } catch {
       setMessages([{ role: 'assistant', content: '¡Bienvenido a MinaMatch Puno! Soy tu asistente IA. ¿En qué puedo ayudarte?' }]);
@@ -62,33 +55,12 @@ export default function ChatBot() {
     setLoading(true);
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     try {
-      const res = await fetch(`${BASE_URL}/api/chat`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ message: userMsg }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Error del servidor');
-      }
-
-      if (!res.body) throw new Error('Streaming no soportado');
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      
       // Add an initial empty message for the assistant
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
       let fullContent = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
+      await v2SendChatMessage(userMsg, (chunk) => {
         fullContent += chunk;
-
         setMessages(prev => {
           const next = [...prev];
           if (next.length > 0) {
@@ -96,7 +68,7 @@ export default function ChatBot() {
           }
           return next;
         });
-      }
+      });
     } catch (err) {
       setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${err instanceof Error ? err.message : 'No se pudo conectar con el servidor.'}` }]);
     } finally {
@@ -106,7 +78,7 @@ export default function ChatBot() {
 
   const handleClear = async () => {
     try {
-      await fetch(`${BASE_URL}/api/chat/history`, { method: 'DELETE', headers: getAuthHeaders() });
+      await v2ClearChatHistory();
     } catch {}
     setMessages([{ role: 'assistant', content: 'Historial eliminado. ¿En qué puedo ayudarte?' }]);
   };

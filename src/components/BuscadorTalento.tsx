@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { mockCandidates } from '../data';
-import { Candidate } from '@minamatch/shared';
+import type { V2Candidate } from '../lib/api';
+import { v2FetchCandidates } from '../lib/api';
 import { Search, Flame, Languages, Check, ArrowRight, UserCheck, PhoneCall, Sparkles, X, Award, FileText, Users2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import FitSocialRadar from '../minatalent/FitSocialRadar';
@@ -17,7 +18,9 @@ export default function BuscadorTalento() {
   const [filterTop5, setFilterTop5] = useState(false);
   const [filterUnaPuno, setFilterUnaPuno] = useState(false);
   const [filterLanguages, setFilterLanguages] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<V2Candidate | null>(null);
+  const [candidates, setCandidates] = useState<V2Candidate[]>(mockCandidates as unknown as V2Candidate[]);
+  const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
     if (!selectedCandidate) return;
@@ -26,9 +29,19 @@ export default function BuscadorTalento() {
     return () => window.removeEventListener('keydown', handler);
   }, [selectedCandidate]);
 
+  React.useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    v2FetchCandidates()
+      .then((data) => { if (!cancelled) setCandidates(data as V2Candidate[]); })
+      .catch(() => { if (!cancelled) setCandidates(mockCandidates as unknown as V2Candidate[]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
   // Dynamic regional radar calculations based on real mock data
   const regionalStats = useMemo(() => {
-    const filtered = mockCandidates.filter(cand => {
+    const filtered = candidates.filter(cand => {
       if (filterUnaPuno && !cand.institution.includes('UNA Puno')) return false;
       if (filterTop5 && !cand.isTop5) return false;
       if (searchQuery) {
@@ -57,7 +70,7 @@ export default function BuscadorTalento() {
 
   // Reactive candidate filtration logic
   const filteredCandidates = useMemo(() => {
-    return mockCandidates.filter(cand => {
+    return candidates.filter(cand => {
       // search bar match
       const query = searchQuery.toLowerCase();
       const matchesSearch = 

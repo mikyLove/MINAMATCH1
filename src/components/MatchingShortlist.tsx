@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Candidate } from '@minamatch/shared';
-import { fetchCandidates, BASE_URL } from '../api';
+import type { V2Candidate } from '../lib/api';
+import { v2FetchCandidates } from '../lib/api';
 import { mockCandidates } from '../data';
 import { useToast } from './Toast';
 import { ArrowRight, CheckCircle2, MapPin, Search, ShieldCheck, Sliders, Sparkles, Target, TriangleAlert, Video, Users2, AlertOctagon, PartyPopper, Wifi, WifiOff } from 'lucide-react';
@@ -25,12 +25,12 @@ export default function MatchingShortlist() {
   const [searchQuery, setSearchQuery] = useState('');
   const [altitudeThreshold, setAltitudeThreshold] = useState(4500);
   const [showAltitudeFilter, setShowAltitudeFilter] = useState(false);
-  const [selectedInterviewee, setSelectedInterviewee] = useState<Candidate | null>(null);
+  const [selectedInterviewee, setSelectedInterviewee] = useState<V2Candidate | null>(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [connected, setConnected] = useState<boolean | null>(null);
   const [isFinished, setIsFinished] = useState(false);
   const [activeQuestionIdx, setActiveQuestionIdx] = useState(0);
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [candidates, setCandidates] = useState<V2Candidate[]>([]);
   const [loadingCandidates, setLoadingCandidates] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -42,7 +42,7 @@ export default function MatchingShortlist() {
       setLoadError(null);
 
       try {
-        const data = await fetchCandidates();
+        const data = await v2FetchCandidates();
         if (isCancelled) return;
         setCandidates(data);
         setConnected(true);

@@ -6,3 +6,10 @@ export type { V2Student };
 export function v2FetchStudents(): Promise<V2Student[]> {
   return v2Fetch<V2Student[]>('/api/students');
 }
+
+export function v2ToggleSyllabus(studentId: string, courseId: string, completed: boolean) {
+  return v2Fetch<{ score: number; status: string; completed: boolean }>(
+    `/api/students/${studentId}/syllabus/${courseId}`,
+    { method: 'PUT', body: JSON.stringify({ completed }) }
+  );
+}

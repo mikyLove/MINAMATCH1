@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { mockStudents } from '../data';
-import { Student } from '@minamatch/shared';
-import { fetchStudents } from '../api';
+import { v2FetchStudents } from '../lib/api';
+import type { V2Student } from '../lib/api';
 import { useToast } from './Toast';
 import { GraduationCap, Users, Award, TrendingUp, CheckCircle, BookOpen, DollarSign, Target, ChevronRight, Clock, Wifi, WifiOff, BarChart3, PieChart } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -35,7 +35,7 @@ function CountUp({ value, suffix = '' }: { value: number; suffix?: string }) {
 }
 
 export default function SemillerosDashboard({ onNavigate }: SemillerosDashboardProps) {
-  const [students, setStudents] = useState<Student[]>([]);
+  const [students, setStudents] = useState<V2Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState<boolean | null>(null);
   const { toast } = useToast();
@@ -44,14 +44,14 @@ export default function SemillerosDashboard({ onNavigate }: SemillerosDashboardP
   useEffect(() => {
     if (fetchRef.current) return;
     fetchRef.current = true;
-    fetchStudents()
+    v2FetchStudents()
       .then(data => {
-        setStudents(data);
+        setStudents(data as V2Student[]);
         setConnected(true);
         setLoading(false);
       })
       .catch(() => {
-        setStudents(mockStudents);
+        setStudents(mockStudents as unknown as V2Student[]);
         setConnected(false);
         setLoading(false);
         toast('Usando datos locales — servidor no disponible', 'error');

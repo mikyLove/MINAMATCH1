@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { jsPDF } from 'jspdf';
 import { mockStudents } from '../data';
-import { Student } from '@minamatch/shared';
-import { fetchStudents, toggleSyllabus } from '../api';
+import { v2FetchStudents, v2ToggleSyllabus } from '../lib/api';
+import type { V2Student } from '../lib/api';
 import { useToast } from './Toast';
 import { ShieldCheck, Award, FileText, CheckCircle, Database, ChevronRight, CircleAlert, Download, Check, Search, GraduationCap, TrendingUp, Users, BookOpen, X, Info, Wifi, WifiOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -147,8 +147,8 @@ function CountUp({ value, suffix = '' }: { value: number; suffix?: string }) {
 export default function SemillerosList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'FINALIZADO' | 'EN_CURSO'>('ALL');
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [studentsState, setStudentsState] = useState<Student[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<V2Student | null>(null);
+  const [studentsState, setStudentsState] = useState<V2Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
   const [connected, setConnected] = useState<boolean | null>(null);
@@ -169,15 +169,15 @@ export default function SemillerosList() {
   useEffect(() => {
     if (fetchRef.current) return;
     fetchRef.current = true;
-    fetchStudents()
+    v2FetchStudents()
       .then(data => {
-        setStudentsState(data);
+        setStudentsState(data as V2Student[]);
         setConnected(true);
         setLoading(false);
         toast(`${data.length} estudiantes sincronizados`, 'success');
       })
       .catch(() => {
-        setStudentsState(mockStudents);
+        setStudentsState(mockStudents as unknown as V2Student[]);
         setConnected(false);
         setLoading(false);
         toast('Usando datos locales — servidor no disponible', 'error');
@@ -228,7 +228,7 @@ export default function SemillerosList() {
     if (connected) {
       setSyncing(true);
       try {
-        await toggleSyllabus(activeStudent.id, courseId, newCompleted);
+        await v2ToggleSyllabus(activeStudent.id, courseId, newCompleted);
         toast('Progreso guardado en el servidor', 'success');
       } catch {
         setConnected(false);
@@ -306,7 +306,7 @@ export default function SemillerosList() {
     }
   };
 
-  const generateContractPDF = useCallback((student: Student) => {
+  const generateContractPDF = useCallback((student: V2Student) => {
     const doc = new jsPDF('p', 'mm', 'a4');
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();

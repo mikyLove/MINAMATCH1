@@ -906,6 +906,26 @@ SQLite se congela como respaldo histórico de V1 y referencia legacy. No recibe 
 
 ---
 
+## Fase 4C — Migración de componentes React a V2 API (2026-05-28)
+
+### Modificado
+- `src/components/SemillerosList.tsx` — usa ahora `v2FetchStudents()` y `v2ToggleSyllabus()` desde `src/lib/api`; tipos actualizados a `V2Student`.
+- `src/components/SemillerosDashboard.tsx` — usa ahora `v2FetchStudents()` desde `src/lib/api`; tipos actualizados a `V2Student`.
+- `src/components/ChatBot.tsx` — reemplazado `fetch` directo por `v2FetchChatHistory()`, `v2SendChatMessage()` y `v2ClearChatHistory()` (streaming manejado por `v2SendChatMessage`).
+
+### Notas
+- Se configuró manejo automático de JWT con `localStorage` (`minamatch_token`) a través de `src/lib/api/client.ts` — todas las llamadas V2 incluyen el header `Authorization: Bearer <token>` automáticamente.
+- No se tocaron archivos V1 (`src/`, `server/`) — solo cambios en frontend V2.
+- Se eliminó cualquier referencia de la frontend a endpoints V1 directos en los componentes modificados.
+- Se añadió `v2ToggleSyllabus()` en `src/lib/api/students.ts` y se exportó desde el barrel `src/lib/api/index.ts`.
+
+### Validación
+- `pnpm run build` ✅ (siempre que `VITE_API_URL` apunte a `http://localhost:3004` con backend PostgreSQL)
+- `pnpm run lint` ✅
+
+
+---
+
 ## Fase 4B — AuthContext migrado a autenticación V2 (2026-05-28)
 
 ### Modificado

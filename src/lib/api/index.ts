@@ -19,6 +19,7 @@ export type { V2Candidate } from './candidates';
 
 export { v2FetchStudents } from './students';
 export type { V2Student } from './students';
+export { v2ToggleSyllabus } from './students';
 
 export { v2FetchScenarios } from './scenarios';
 export type { V2Scenario } from './scenarios';
