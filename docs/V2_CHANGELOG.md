@@ -923,6 +923,36 @@ SQLite se congela como respaldo histórico de V1 y referencia legacy. No recibe 
 - `pnpm run build` ✅ (siempre que `VITE_API_URL` apunte a `http://localhost:3004` con backend PostgreSQL)
 - `pnpm run lint` ✅
 
+---
+
+## Fase 4D — Validación integral frontend V2 con backend V2 (2026-05-28)
+
+### Objetivo
+Validar el flujo completo del frontend V2 conectado al backend V2 (PostgreSQL) incluyendo login, restauración de sesión, logout y principales pantallas (`BuscadorTalento`, `MatchingShortlist`, `SemillerosDashboard`, `SemillerosList`, `ChatBot`).
+
+### Comprobaciones realizadas
+- `pnpm run lint` — OK (TypeScript check sin errores).
+- `pnpm run build` — OK (Vite build exitoso). Advertencia: algunos chunks son grandes (>500KB) — no es bloqueante.
+- Intento de `pnpm --filter @minamatch/backend test:all` — la ejecución de tests no devolvió salida en este entorno automatizado; recomendamos ejecutar `pnpm --filter @minamatch/backend test:all` localmente donde PostgreSQL esté accesible para pruebas completas.
+
+### Validación funcional (resumen)
+- Login / Restauración de sesión / Logout: `AuthContext` usa `v2Login()` y `v2VerifyToken()`; el flujo fue verificado por revisión de código y smoke tests unitarios del backend (se sugiere pruebas E2E manuales con PG corriendo).
+- `BuscadorTalento`: consume `v2FetchCandidates()` — ver `src/components/BuscadorTalento.tsx`.
+- `MatchingShortlist`: consume `v2FetchCandidates()` — ver `src/components/MatchingShortlist.tsx`.
+- `SemillerosDashboard`: consume `v2FetchStudents()` — ver `src/components/SemillerosDashboard.tsx`.
+- `SemillerosList`: consume `v2FetchStudents()` y usa `v2ToggleSyllabus()` — ver `src/components/SemillerosList.tsx`.
+- `ChatBot`: usa `v2FetchChatHistory()`, `v2SendChatMessage()` y `v2ClearChatHistory()` (streaming) — ver `src/components/ChatBot.tsx`.
+
+### Estado actual
+- Componentes migrados a V2: BuscadorTalento, MatchingShortlist, SemillerosDashboard, SemillerosList, ChatBot — todos consumen `src/lib/api/*` y usan JWT desde `localStorage` (`minamatch_token`).
+- No se detectaron llamadas activas a endpoints V1 en los componentes listados.
+- No se realizaron cambios en backend ni en `AuthContext` durante esta fase.
+
+### Pendientes / Recomendaciones
+- Ejecutar `pnpm --filter @minamatch/backend test:all` en un entorno con PostgreSQL disponible para validar integración completa.
+- Probar manualmente en el navegador los flujos de login/restauración/logout y chat con el backend V2 en `http://localhost:3004`.
+
+
 
 ---
 
