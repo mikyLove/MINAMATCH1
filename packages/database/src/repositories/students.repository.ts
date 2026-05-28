@@ -1,7 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
 import { getDb } from '../client';
 import { students, studentSyllabus } from '../schema';
-import type { StudentSyllabus } from '../schema';
 
 export type StudentRow = typeof students.$inferSelect;
 export type StudentInsert = typeof students.$inferInsert;

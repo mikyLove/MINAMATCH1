@@ -1,7 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
 import { getDb } from '../client';
 import { candidates, candidateInterviews } from '../schema';
-import type { Candidate, CandidateInterview } from '../schema';
 
 export type CandidateRow = typeof candidates.$inferSelect;
 export type CandidateInsert = typeof candidates.$inferInsert;

@@ -198,3 +198,51 @@ V1 (src/, server/) ya no depende de archivos locales de tipos/validadores/config
 - `pnpm run lint` ⚠️ — solo 3 errores pre-existentes en `LandingPage.tsx`
 - TypeScript type-check ✅ — repositorios compilan correctamente
 - Exports verificados via tsx eval ✅
+
+---
+
+## Fase 2C-2 — Rutas V2 con repositorios tipados (2026-05-27)
+
+### Añadido
+- `packages/backend/tsconfig.json`
+- `packages/backend/src/index.ts` — entry point de prueba (puerto 3004)
+- `packages/backend/src/routes/v2/simple.routes.ts` — handlers V2 usando repositorios tipados
+
+### Modificado
+- `packages/backend/package.json` — +express, cors, drizzle-orm, @minamatch/database, types
+
+### Endpoints migrados a V2 con repositorios Drizzle
+
+| Endpoint | Método | Repositorio usado | Coincide con V1 |
+|----------|--------|-------------------|-----------------|
+| `/api/candidates` | GET | `candidatesRepo.findAll()` | ✅ estructura |
+| `/api/candidates/:id` | GET | `candidatesRepo.findById()` | ✅ estructura |
+| `/api/students` | GET | `studentsRepo.findAll()` | ✅ estructura |
+| `/api/scenarios` | GET | `getDb()` + schema directo | ✅ idéntico |
+
+### Transformaciones implementadas
+- `languages` y `skills`: JSON string → array parseado
+- `certified`, `isTop5`, `hasOsha`: boolean correcto
+- `aiInterviewTranscript`: agregado desde candidate_interviews
+- Syllabus: formato `{ id, course, completed }` (idéntico a V1)
+- Scenarios: `options[].impact.culturalFit` anidado (idéntico a V1)
+- Compatibilidad V1: snake_case duplicado (exp_years, match_rating, etc.)
+
+### Verificado localmente
+- Servidor V2 iniciado en puerto 3099
+- `GET /api/candidates` → 6 candidatos con entrevistas
+- `GET /api/students` → 2 estudiantes con syllabus
+- `GET /api/scenarios` → 5 escenarios con opciones e impact
+- Comparación V1 vs V2: estructura y formato idénticos
+  - Datos de candidates/students difieren porque V1 fue modificado por uso (no por error de código)
+  - Scenarios: 5/5 coinciden exactamente entre V1 y V2
+
+### No tocado
+- `server/db.ts` — V1 SQLite sigue intacto
+- `src/`, `server/`, `data/` — sin cambios
+- Express V1 — sin modificar
+
+### Validación
+- `pnpm install` ✅
+- `pnpm run build` ✅
+- `pnpm run lint` ⚠️ — solo 3 errores pre-existentes en `LandingPage.tsx`
