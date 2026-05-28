@@ -105,3 +105,32 @@
 
 ### Logro
 V1 (src/, server/) ya no depende de archivos locales de tipos/validadores/config. Todo se resuelve via `@minamatch/shared`.
+
+---
+
+## Fase 2A — Infraestructura de base de datos (2026-05-27)
+
+### Añadido
+- `packages/database/tsconfig.json` — configuración TypeScript para database package
+- `packages/database/drizzle.config.ts` — configuración de Drizzle Kit
+- `packages/database/src/schema.ts` — schema Drizzle para PostgreSQL (8 tablas)
+- `packages/database/src/client.ts` — cliente Drizzle + postgres.js
+- `packages/database/src/seed.ts` — seed data para desarrollo (candidatos, estudiantes, escenarios, etc.)
+- `packages/database/src/index.ts` — barrel export actualizado
+- `docs/V2_DATABASE.md` — documentación de la capa de datos
+- `docker-compose.yml` — PostgreSQL 16 de referencia para desarrollo local
+
+### Modificado
+- `packages/database/package.json` — se añadieron `drizzle-orm`, `postgres`, `drizzle-kit`, `dotenv`
+- `package.json` raíz — se añadieron scripts `db:*` (generate, migrate, push, seed, studio)
+- `.env.example` — se añadió `DATABASE_URL`
+
+### No tocado
+- `server/db.ts` — V1 SQLite sigue intacto
+- `src/`, `server/`, `data/` — sin cambios
+
+### Validación
+- `pnpm install` ✅
+- `pnpm run build` ✅
+- `pnpm run lint` ⚠️ — solo 3 errores pre-existentes en `LandingPage.tsx`
+- `git status` ✅ — solo archivos esperados

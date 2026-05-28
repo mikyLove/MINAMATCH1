@@ -1,0 +1,16 @@
+# Referencia para desarrollo local de PostgreSQL.
+# No ejecutar en producción. No afiliado a Railway V1.
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: minamatch
+      POSTGRES_PASSWORD: minamatch_dev
+      POSTGRES_DB: minamatch_v2
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
