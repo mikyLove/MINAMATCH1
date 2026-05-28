@@ -116,6 +116,38 @@ export interface UserInsert {
   createdAt?: string | null;
 }
 
+// ─── Scenario types ────────────────────────────────────────────
+export interface ScenarioOptionImpact {
+  calma: number | null;
+  seguridad: number | null;
+  tiempo: string | null;
+  toleranciaFrio: number | null;
+  culturalFit: {
+    seguridad: number | null;
+    etica: number | null;
+    innovacion: number | null;
+  };
+}
+
+export interface ScenarioOptionData {
+  id: string;
+  text: string;
+  description: string | null;
+  impact: ScenarioOptionImpact;
+}
+
+export interface ScenarioWithOptions {
+  id: string;
+  stage: string | null;
+  stageNum: number | null;
+  category: string | null;
+  title: string | null;
+  description: string | null;
+  imageUrl: string | null;
+  alertText: string | null;
+  options: ScenarioOptionData[];
+}
+
 // ─── Chat message types ────────────────────────────────────────
 export interface ChatMessageData {
   id: number;
@@ -165,6 +197,11 @@ export interface IUsersRepo {
   count(): Promise<number>;
 }
 
+export interface IScenariosRepo {
+  findAll(): Promise<ScenarioWithOptions[]>;
+  findById(id: string): Promise<ScenarioWithOptions | undefined>;
+}
+
 export interface IChatRepo {
   findHistory(userId: string, limit?: number): Promise<ChatMessageData[]>;
   addMessage(data: ChatMessageInsert): Promise<ChatMessageData>;
@@ -183,4 +220,5 @@ export interface DatabaseProvider {
   students: IStudentsRepo;
   users: IUsersRepo;
   chat: IChatRepo;
+  scenarios: IScenariosRepo;
 }

@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { eq, asc } from 'drizzle-orm';
-import { getProvider, getDb, scenarios, scenarioOptions } from '@minamatch/database';
+import { getProvider } from '@minamatch/database';
 
 const router: Router = Router();
 
@@ -101,51 +100,12 @@ router.get('/students', async (_req, res) => {
   }
 });
 
-// GET /api/scenarios — lista completa con opciones (PENDIENTE: migrar a DatabaseProvider)
-// Actualmente usa getDb() + Drizzle directamente. Solo funciona con PostgreSQL.
+// GET /api/scenarios — lista completa con opciones (usa DatabaseProvider)
 router.get('/scenarios', async (_req, res) => {
   try {
-    const db = getDb();
-    const scenarioRows = await db
-      .select()
-      .from(scenarios)
-      .orderBy(asc(scenarios.stageNum));
-
-    const enriched = [];
-    for (const s of scenarioRows) {
-      const optionRows = await db
-        .select()
-        .from(scenarioOptions)
-        .where(eq(scenarioOptions.scenarioId, s.id));
-
-      enriched.push({
-        id: s.id,
-        stage: s.stage,
-        stageNum: s.stageNum,
-        category: s.category,
-        title: s.title,
-        description: s.description,
-        imageUrl: s.imageUrl,
-        alertText: s.alertText,
-        options: optionRows.map((o) => ({
-          id: o.id,
-          text: o.text,
-          description: o.description,
-          impact: {
-            calma: o.calma,
-            seguridad: o.seguridad,
-            tiempo: o.tiempo,
-            toleranciaFrio: o.toleranciaFrio,
-            culturalFit: {
-              seguridad: o.culturalFitSeguridad,
-              etica: o.culturalFitEtica,
-              innovacion: o.culturalFitInnovacion,
-            },
-          },
-        })),
-      });
-    }
-    res.json(enriched);
+    const provider = await getProvider();
+    const rows = await provider.scenarios.findAll();
+    res.json(rows);
   } catch (err) {
     console.error('[V2] GET /scenarios error:', err);
     res.status(500).json({ error: 'Internal server error' });

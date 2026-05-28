@@ -49,6 +49,7 @@ async function createPostgresProvider(): Promise<DatabaseProvider> {
   const studentsRepo = await import('./repositories/students.repository');
   const usersRepo = await import('./repositories/users.repository');
   const chatRepo = await import('./repositories/chat.repository');
+  const scenariosRepo = await import('./repositories/scenarios.repository');
 
   return {
     kind: 'postgres',
@@ -56,6 +57,7 @@ async function createPostgresProvider(): Promise<DatabaseProvider> {
     students: studentsRepo,
     users: usersRepo,
     chat: chatRepo,
+    scenarios: scenariosRepo,
   };
 }
 
@@ -68,6 +70,7 @@ async function createSqliteProvider(): Promise<DatabaseProvider> {
     students: sqlite.studentsRepo,
     users: sqlite.usersRepo,
     chat: sqlite.chatRepo,
+    scenarios: sqlite.scenariosRepo,
   };
 }
 

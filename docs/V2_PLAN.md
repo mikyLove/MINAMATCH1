@@ -68,10 +68,10 @@
 - [x] API versionada (`/api/v2/...`)
 - [ ] Logger estructurado (Pino) — pendiente
 - [x] Autenticación JWT funcionando
-- [x] Rutas simples conectadas al DatabaseProvider (candidates, students)
+- [x] Rutas simples conectadas al DatabaseProvider (candidates, students, scenarios)
 - [x] Modo híbrido PostgreSQL / SQLite según `DATABASE_PROVIDER`
-- [ ] Scenarios pendiente de migrar al provider
-- [ ] Tests de integración con Vitest + Supertest — pendiente
+- [x] Scenarios migrados al provider (IScenariosRepo con findAll y findById)
+- [x] Tests de integración con Vitest + Supertest (6 tests, SQLite)
 - [x] Runtime: tsx
 
 ### Fase 4 — frontend: React V2 ❌

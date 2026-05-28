@@ -418,24 +418,110 @@ $ curl http://localhost:3099/api/scenarios
 → {"error":"Internal server error"} (requiere PostgreSQL)
 ```
 
-### Scenarios — pendiente
-El endpoint `/api/scenarios` aún usa `getDb()` + Drizzle directamente. Funciona solo con PostgreSQL.
-Para la próxima fase se agregará `IScenariosRepo` al provider y se implementará para ambos motores.
+### Validación
+- `pnpm install` ✅
+- `pnpm run build` ✅ (Vite build exitoso)
+- `pnpm run lint` ✅ (tsc --noEmit, 0 errores)
+- `DATABASE_PROVIDER=sqlite` → curl endpoints V2 responden desde SQLite ✅
+- V1 sin cambios — git status confirma solo archivos esperados
+
+---
+
+## Fase 3B — Scenarios en DatabaseProvider híbrido (2026-05-27)
+
+### Añadido
+- `packages/database/src/repositories/scenarios.repository.ts` — repositorio PG con Drizzle
+- `packages/database/src/sqlite/scenarios.repository.ts` — repositorio SQLite con better-sqlite3
+
+### Modificado
+- `packages/database/src/provider.types.ts` — agregado `ScenarioWithOptions`, `ScenarioOptionData`, `ScenarioOptionImpact`, `IScenariosRepo`
+- `packages/database/src/provider.ts` — `createPostgresProvider()` y `createSqliteProvider()` ahora exportan `scenarios`
+- `packages/database/src/repositories/index.ts` — exporta `scenariosRepo`
+- `packages/database/src/sqlite/index.ts` — exporta `scenariosRepo`
+- `packages/backend/src/routes/v2/simple.routes.ts` — `GET /api/scenarios` ahora usa `provider.scenarios.findAll()` (ya no usa `getDb()` directo)
+
+### Interfaz IScenariosRepo
+
+```ts
+interface IScenariosRepo {
+  findAll(): Promise<ScenarioWithOptions[]>;
+  findById(id: string): Promise<ScenarioWithOptions | undefined>;
+}
+```
+
+El método `findAll()` retorna el mismo formato anidado que V1: `options[].impact.culturalFit` con `seguridad`, `etica`, `innovacion`.
+
+### Endpoints V2 — todos híbridos ✅
+
+| Endpoint | Provider | SQLite | PostgreSQL |
+|----------|----------|--------|-----------|
+| `GET /api/candidates` | `provider.candidates.findAll()` | ✅ 6 | ✅ |
+| `GET /api/candidates/:id` | `provider.candidates.findById()` | ✅ | ✅ |
+| `GET /api/students` | `provider.students.findAll()` | ✅ 2 | ✅ |
+| `GET /api/scenarios` | `provider.scenarios.findAll()` | ✅ 5 | ✅ |
+
+### Prueba con SQLite
+```bash
+$ curl /api/scenarios | python3 -c "len(json.load(sys.stdin))"
+5 scenarios loaded from SQLite  ✓
+```
+Estructura idéntica a V1: escenarios con `options[].impact.culturalFit`.
 
 ### No tocado
 - `server/db.ts` — V1 SQLite intacto ✅
 - `server/routes/*` — V1 Express intacto ✅
 - `src/` — frontend V1 intacto ✅
 - `data/minamatch.db` — datos V1 intactos ✅
-- `packages/backend/src/routes/v2/auth.routes.ts` — auth sin cambios ✅
-- `packages/backend/src/routes/v2/chat.routes.ts` — chat sin cambios ✅
-- `packages/backend/src/routes/v2/agents.routes.ts` — agents sin cambios ✅
-- `packages/database/src/repositories/*` — repos PG sin cambios ✅
-- `packages/database/src/sqlite/*` — repos SQLite sin cambios ✅
+- `packages/backend/src/routes/v2/auth/chat/agents` — sin cambios ✅
 
 ### Validación
 - `pnpm install` ✅
 - `pnpm run build` ✅ (Vite build exitoso)
 - `pnpm run lint` ✅ (tsc --noEmit, 0 errores)
-- `DATABASE_PROVIDER=sqlite` → curl endpoints V2 responden desde SQLite ✅
-- V1 sin cambios — git status confirma solo archivos esperados`
+- `DATABASE_PROVIDER=sqlite` → 5 escenarios con options e impact ✔️
+- V1 sin cambios — git status confirma solo archivos esperados
+
+---
+
+## Fase 3C — Tests de integración con Vitest + Supertest (2026-05-28)
+
+### Añadido
+- `packages/backend/vitest.config.ts` — configuración de Vitest con `environment: 'node'` y `DATABASE_PROVIDER=sqlite`
+- `packages/backend/src/__tests__/simple.routes.test.ts` — 6 tests de integración:
+
+  | Test | Status |
+  |------|--------|
+  | `GET /api/v2/health` → 200 con status ok | ✅ |
+  | `GET /api/candidates` → array con fields enriquecidos | ✅ |
+  | `GET /api/candidates/:id` → candidato individual con entrevistas | ✅ |
+  | `GET /api/candidates/:id` → 404 si no existe | ✅ |
+  | `GET /api/students` → array con syllabus | ✅ |
+  | `GET /api/scenarios` → array con options y culturalFit anidado | ✅ |
+
+### Modificado
+- `packages/backend/src/app.ts` (nuevo) — separa creación del app Express del `listen()`, sin side effects (no dotenv)
+- `packages/backend/src/index.ts` — ahora importa `app` dinámicamente tras cargar dotenv
+- `packages/backend/package.json` — agregado `test` y `test:watch` scripts
+- `packages/backend/tsconfig.json` — include agrega `vitest.config.ts`
+
+### Patrón de testing
+```ts
+// Los tests importan app sin levantar servidor HTTP
+import { app } from '../app';
+const res = await request(app).get('/api/candidates');
+```
+
+### Cobertura actual
+- 6 tests de integración contra SQLite (proveedor configurado vía `env` en vitest.config.ts)
+- Sin mockeo — tests reales contra `data/minamatch.db`
+- Sin tests de auth/chat/agents (excluidos por alcance)
+
+### No tocado
+- `server/`, `src/`, `data/` — V1 intacto ✅
+- Tests de PostgreSQL (requieren DATABASE_URL real) — pendiente
+- Tests unitarios de repositorios — pendiente
+
+### Validación
+- `pnpm --filter @minamatch/backend test` → 6 tests passed ✅
+- `pnpm run build` ✅ (Vite build exitoso)
+- `pnpm run lint` ✅ (backend tsc --noEmit, 0 errores; V1 frontend tiene errores preexistentes no relacionados)`
