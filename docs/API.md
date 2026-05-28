@@ -316,7 +316,98 @@ Response 200:
 Auth: No requerida
 ```
 
-## Health & Readiness
+## V2 Health & Readiness
+
+Los endpoints V2 reemplazan a sus contrapartes V1, con un payload más rico y adaptado al sistema híbrido PostgreSQL/SQLite + Gemini.
+
+### `GET /api/v2/health`
+
+Healthcheck de **liveness** del sistema V2. Retorna estado del provider activo, base de datos, Gemini, y métricas del proceso. Siempre retorna 200. No genera log de pino-http (filtrado para evitar ruido en monitoreo).
+
+```
+Response 200:
+  {
+    "status": "ok",
+    "version": "v2",
+    "provider": "sqlite",
+    "dbStatus": "connected",
+    "gemini": "disabled",
+    "uptime": 1234,
+    "environment": "development",
+    "logging": true,
+    "pid": 12345,
+    "memory": {
+      "rss": 45.12,
+      "heapTotal": 30.5,
+      "heapUsed": 22.8
+    },
+    "timestamp": "2026-05-28T03:30:00.000Z"
+  }
+
+Auth: No requerida
+```
+
+### `GET /api/v2/ready`
+
+Healthcheck de **readiness** del sistema V2. Hace una query real a la base de datos para verificar conectividad. Retorna 200 si todo funciona, 503 si la base de datos no responde.
+
+```
+Response 200:
+  {
+    "status": "ok",
+    "version": "v2",
+    "provider": "postgres",
+    "dbStatus": "connected",
+    "gemini": "ok",
+    "uptime": 5678,
+    "environment": "production",
+    "logging": true,
+    "pid": 67890,
+    "memory": {
+      "rss": 48.2,
+      "heapTotal": 32.1,
+      "heapUsed": 25.4
+    },
+    "timestamp": "2026-05-28T03:30:05.000Z"
+  }
+
+Response 503 (DB caída):
+  {
+    "status": "error",
+    "version": "v2",
+    "provider": "postgres",
+    "dbStatus": "disconnected",
+    "gemini": "ok",
+    "uptime": 5678,
+    "environment": "production",
+    "logging": true,
+    "pid": 67890,
+    "error": "Database not ready",
+    "timestamp": "2026-05-28T03:30:05.000Z"
+  }
+
+Auth: No requerida
+```
+
+### Campos comunes
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `status` | string | `"ok"` o `"error"` |
+| `version` | string | `"v2"` fijo |
+| `provider` | string | `"postgres"`, `"sqlite"` o `"unknown"` |
+| `dbStatus` | string | `"connected"`, `"disconnected"` o `"error"` |
+| `gemini` | string | `"ok"` si hay `GEMINI_API_KEY`, `"disabled"` si no |
+| `uptime` | number | Segundos desde que arrancó el proceso |
+| `environment` | string | `NODE_ENV` o `"development"` por defecto |
+| `logging` | boolean | `true` (Pino siempre activo) |
+| `pid` | number | PID del proceso Express |
+| `memory` | object | RSS, heapTotal, heapUsed en MB |
+| `timestamp` | string | ISO 8601 |
+
+---
+
+## Health & Readiness (V1 — legacy)
 
 ### `GET /api/health`
 

@@ -29,6 +29,8 @@ app.listen(PORT, () => {
   logger.info('  GET /api/candidates/:id');
   logger.info('  GET /api/students');
   logger.info('  GET /api/scenarios');
+  logger.info('  GET /api/v2/health');
+  logger.info('  GET /api/v2/ready');
   logger.info('  POST /api/v2/auth/login');
   logger.info('  GET /api/v2/auth/me');
   logger.info('  POST /api/v2/chat/message');

@@ -5,6 +5,7 @@ import simpleRoutes from './routes/v2/simple.routes';
 import authRoutes from './routes/v2/auth.routes';
 import chatRoutes from './routes/v2/chat.routes';
 import agentsRoutes from './routes/v2/agents.routes';
+import healthRoutes from './routes/v2/health.routes';
 
 const app = express();
 
@@ -20,9 +21,6 @@ app.use('/api', simpleRoutes);
 app.use('/api/v2/auth', authRoutes);
 app.use('/api/v2/chat', chatRoutes);
 app.use('/api/v2/agents', agentsRoutes);
-
-app.get('/api/v2/health', (_req, res) => {
-  res.json({ status: 'ok', version: 'v2', timestamp: new Date().toISOString() });
-});
+app.use('/api/v2', healthRoutes);
 
 export { app };

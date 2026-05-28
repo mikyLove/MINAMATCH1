@@ -726,3 +726,56 @@ if (model) {
 - `npx tsc --noEmit --project packages/backend/tsconfig.json` ✅
 - `pnpm --filter @minamatch/backend test:sqlite` → 39/39 ✅
 - `pnpm run build` ✅ (Vite build exitoso)
+
+---
+
+## Fase 3G — Health/Readiness endpoints mejorados (2026-05-28)
+
+### Añadido
+- `packages/backend/src/routes/v2/health.routes.ts` — endpoints de health y readiness para V2:
+  - `GET /api/v2/health` — liveness: provider, dbStatus, gemini, uptime, environment, version, logging, pid, memory, timestamp (siempre 200)
+  - `GET /api/v2/ready` — readiness: mismos campos + DB probe real (200 si ok, 503 si DB caída)
+
+### Modificado
+- `packages/backend/src/app.ts` — rutas de health montadas vía `healthRoutes`, reemplaza inline `/api/v2/health`
+- `packages/backend/src/__tests__/simple.routes.test.ts` — health test ampliado con nuevos campos; nuevo `/api/v2/ready` test
+- `packages/backend/src/__tests__/simple.routes.postgres.test.ts` — health test ampliado; nuevo `/api/v2/ready` test
+- `docs/API.md` — sección V2 Health & Readiness añadida
+
+### Campos de respuesta
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `status` | string | `"ok"` o `"error"` |
+| `version` | string | `"v2"` fijo |
+| `provider` | string | `"postgres"`, `"sqlite"` o `"unknown"` |
+| `dbStatus` | string | `"connected"`, `"disconnected"` o `"error"` |
+| `gemini` | string | `"ok"` si hay API key, `"disabled"` si no |
+| `uptime` | number | Segundos desde inicio del proceso |
+| `environment` | string | Valor de `NODE_ENV` |
+| `logging` | boolean | Siempre `true` (Pino activo) |
+| `pid` | number | Process ID |
+| `memory` | object | RSS, heapTotal, heapUsed en MB |
+| `timestamp` | string | ISO 8601 |
+
+### Endpoint /health
+- Siempre retorna 200
+- Hace DB probe (query ligera a candidates)
+- No genera logs de pino-http (filtrado por `autoLogging.ignore`)
+
+### Endpoint /ready
+- Retorna 200 si DB responde, 503 si no
+- Hace DB probe real (falla si DB no está disponible)
+- Usa logging normal de pino-http
+
+### No tocado
+- `server/`, `src/`, `data/` — V1 intacto ✅
+- `/api/health` y `/api/ready` de V1 — intactos ✅
+- `packages/database/` — sin cambios
+- `packages/backend/src/logger.ts` — sin cambios (la exclusión de /health ya existía)
+
+### Validación
+- `npx tsc --noEmit --project packages/backend/tsconfig.json` ✅
+- `pnpm --filter @minamatch/backend test:sqlite` → 41/41 ✅
+- `pnpm --filter @minamatch/backend test:postgres` → 10/10 ✅
+- `pnpm --filter @minamatch/backend test:all` → 51/51 ✅

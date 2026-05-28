@@ -31,11 +31,21 @@ function itPg(name: string, fn: () => Promise<void>) {
 }
 
 describe('V2 Simple Routes (PostgreSQL)', () => {
-  itPg('GET /api/v2/health returns 200 with ok status', async () => {
+  itPg('GET /api/v2/health returns 200 with full system status', async () => {
     const res = await request(app).get('/api/v2/health');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
     expect(res.body.version).toBe('v2');
+    expect(res.body.provider).toBe('postgres');
+    expect(res.body.dbStatus).toBe('connected');
+  });
+
+  itPg('GET /api/v2/ready returns 200 when PostgreSQL is connected', async () => {
+    const res = await request(app).get('/api/v2/ready');
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ok');
+    expect(res.body.provider).toBe('postgres');
+    expect(res.body.dbStatus).toBe('connected');
   });
 
   describe('GET /api/candidates', () => {

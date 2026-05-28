@@ -4,11 +4,34 @@ import { app } from '../app';
 
 describe('V2 Simple Routes (SQLite)', () => {
   describe('GET /api/v2/health', () => {
-    it('returns 200 with ok status', async () => {
+    it('returns 200 with full system status', async () => {
       const res = await request(app).get('/api/v2/health');
       expect(res.status).toBe(200);
       expect(res.body.status).toBe('ok');
       expect(res.body.version).toBe('v2');
+      expect(['postgres', 'sqlite']).toContain(res.body.provider);
+      expect(res.body.dbStatus).toBe('connected');
+      expect(['ok', 'disabled']).toContain(res.body.gemini);
+      expect(typeof res.body.uptime).toBe('number');
+      expect(res.body.environment).toBeTruthy();
+      expect(res.body.logging).toBe(true);
+      expect(res.body.timestamp).toBeTruthy();
+    });
+  });
+
+  describe('GET /api/v2/ready', () => {
+    it('returns 200 with ready status', async () => {
+      const res = await request(app).get('/api/v2/ready');
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('ok');
+      expect(res.body.version).toBe('v2');
+      expect(['postgres', 'sqlite']).toContain(res.body.provider);
+      expect(res.body.dbStatus).toBe('connected');
+      expect(['ok', 'disabled']).toContain(res.body.gemini);
+      expect(typeof res.body.uptime).toBe('number');
+      expect(res.body.environment).toBeTruthy();
+      expect(res.body.logging).toBe(true);
+      expect(res.body.timestamp).toBeTruthy();
     });
   });
 
