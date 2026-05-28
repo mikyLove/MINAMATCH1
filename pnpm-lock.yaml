@@ -94,6 +94,14 @@ importers:
         specifier: ~5.8.2
         version: 5.8.3
 
+  packages/backend: {}
+
+  packages/database: {}
+
+  packages/frontend: {}
+
+  packages/shared: {}
+
 packages:
 
   '@babel/code-frame@7.29.0':
