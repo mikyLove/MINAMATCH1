@@ -134,3 +134,40 @@ V1 (src/, server/) ya no depende de archivos locales de tipos/validadores/config
 - `pnpm run build` ✅
 - `pnpm run lint` ⚠️ — solo 3 errores pre-existentes en `LandingPage.tsx`
 - `git status` ✅ — solo archivos esperados
+
+---
+
+## Fase 2B — Ejecución de migraciones y seed (2026-05-27)
+
+### Ejecutado
+- PostgreSQL 18.4 iniciado localmente (port 5433, sin Docker) con usuario/database `minamatch/minamatch_v2`
+- Migración generada: `packages/database/migrations/0000_calm_blink.sql`
+- Migración aplicada: 8 tablas creadas correctamente
+- Seed ejecutado: datos espejo de V1 cargados
+
+### Datos verificados en PostgreSQL
+
+| Tabla | Filas |
+|-------|-------|
+| candidates | 6 |
+| candidate_interviews | 7 |
+| students | 2 |
+| student_syllabus | 8 |
+| scenarios | 5 |
+| scenario_options | 10 |
+| users | 1 |
+| chat_messages | 1 |
+
+### No tocado
+- `server/db.ts` — V1 SQLite sigue intacto
+- `src/`, `server/`, `data/` — sin cambios
+
+### Validación
+- `pnpm install` ✅
+- `pnpm run build` ✅
+- `pnpm run lint` ⚠️ — solo 3 errores pre-existentes en `LandingPage.tsx`
+- Conexión Drizzle via `client.ts` ✅
+- `git status` ✅ — solo archivos esperados (migrations/ incluido)
+
+### Observación
+- Docker no disponible en este entorno; PostgreSQL se instaló via `apt-get download` + extracción manual de debs, iniciado como usuario local.
