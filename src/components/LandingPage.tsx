@@ -130,7 +130,7 @@ const staggerItem = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
-export default function LandingPage({ onNavigate }: { onNavigate?: () => void }) {
+export default function LandingPage({ onNavigate }: { onNavigate?: (target?: string | boolean) => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('inicio');
   const [scrolled, setScrolled] = useState(false);
