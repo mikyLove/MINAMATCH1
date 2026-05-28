@@ -90,13 +90,23 @@
 - [x] Provider híbrido no recibe nuevas mejoras
 - [x] Documentación actualizada (DB_PROVIDER, DECISIONS, PLAN, CHANGELOG)
 
-### Fase 4 — frontend: React V2 ❌
-- [ ] Dividir componentes monolíticos en partes más pequeñas
-- [ ] Sistema de diseño con componentes base atómicos
+### Fase 4A — Cliente API frontend V2 ✅
+- [x] `src/lib/api/client.ts` — fetch wrapper con JWT, timeout, errores tipados
+- [x] `src/lib/api/types.ts` — tipos TypeScript para respuestas V2
+- [x] `src/lib/api/auth.ts`, `candidates.ts`, `students.ts`, `scenarios.ts`, `chat.ts`, `agents.ts`, `health.ts`
+- [x] `src/lib/api/index.ts` — barrel export
+- [x] `VITE_API_URL` env var
+- [x] Validación: build ✅, lint ✅
+
+### Fase 4B+ — Migración de pantallas a V2 ❌
+- [ ] Migrar AuthContext.tsx a endpoints /api/v2/auth
+- [ ] Migrar BuscadorTalento a V2 API
+- [ ] Migrar SemillerosDashboard/List a V2 API
+- [ ] Migrar ScenarioAssessment a V2 API
+- [ ] Migrar ChatBot a V2 streaming
+- [ ] Agregar indicador visual de fuente V1 vs V2
+- [ ] Dividir componentes monolíticos
 - [ ] React Router en lugar de tabs manuales
-- [ ] TanStack Query para data fetching
-- [ ] Estados de carga/error/vacío consistentes
-- [ ] Tests con Vitest + Testing Library + Playwright
 
 ### Fase 5 — Deploy V2 público ❌
 - [ ] Preparar entorno Railway con PostgreSQL
@@ -148,7 +158,8 @@ A partir de la Fase 3I, V2 **abandona la arquitectura híbrida** PostgreSQL/SQLi
 4. ~~Fase 2 (database) — capa de datos~~
 5. ~~Fase 3 (backend) — nuevo backend~~ ← **completada** (incluye F3F: Pino, F3G: Health, F3H: CI/CD)
 6. ~~Fase 3I — PostgreSQL como fuente única de verdad~~ ← **completada**
-7. Fase 4 (frontend) — nuevo frontend V2 ← **siguiente**
-8. Fase 5 (deploy) — deploy V2 público con PostgreSQL ← **pendiente**
+7. ~~Fase 4A — Cliente API frontend V2~~ ← **completada**
+8. Fase 4B+ — Migración de pantallas a V2 ← **siguiente**
+9. Fase 5 (deploy) — deploy V2 público con PostgreSQL ← **pendiente**
 
 Cada fase debe completarse y verificarse con `pnpm run build` y `pnpm run lint` antes de pasar a la siguiente.

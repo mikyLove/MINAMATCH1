@@ -879,3 +879,27 @@ SQLite se congela como respaldo histórico de V1 y referencia legacy. No recibe 
 - `npx tsc --noEmit --project packages/backend/tsconfig.json` ✅
 - `pnpm --filter @minamatch/backend test:sqlite` → 41/41 ✅
 - `pnpm --filter @minamatch/backend test:postgres` → 10/10 ✅
+
+---
+
+## Fase 4A — Cliente API frontend V2 (2026-05-28)
+
+### Añadido
+- `src/lib/api/client.ts` — fetch wrapper para V2:
+  - `V2_BASE_URL` desde `VITE_API_URL` (default `http://localhost:3004`)
+  - `v2Fetch<T>()` con timeout configurable (10s default), JWT automático, `V2ApiError`
+  - Compatibilidad con `minamatch_token` de localStorage (mismo que V1)
+- `src/lib/api/types.ts` — tipos TypeScript completos para respuestas V2
+- `src/lib/api/auth.ts` — `v2Login()`, `v2VerifyToken()`
+- `src/lib/api/candidates.ts` — `v2FetchCandidates()`, `v2FetchCandidate()`
+- `src/lib/api/students.ts` — `v2FetchStudents()`
+- `src/lib/api/scenarios.ts` — `v2FetchScenarios()`
+- `src/lib/api/chat.ts` — `v2FetchChatHistory()`, `v2ClearChatHistory()`, `v2SendChatMessage()` con streaming
+- `src/lib/api/agents.ts` — `v2Interview()`, `v2EvaluateScenario()`, `v2Matching()`
+- `src/lib/api/health.ts` — `v2Health()`, `v2Ready()`
+- `src/lib/api/index.ts` — barrel export
+- `.env.example` — sección `[Frontend V2 API]` con `VITE_API_URL`
+
+### Validación
+- `pnpm run build` ✅
+- `pnpm run lint` ✅ (solo 3 errores pre-existentes V1)
