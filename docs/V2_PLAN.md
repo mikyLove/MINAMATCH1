@@ -16,14 +16,37 @@
 | Backend sin logging estructurado | Difícil debuggear en producción | Media |
 | Bug en `agents.ts`: referencia a `aiModel` inexistente | Error runtime si Gemini está configurado | Alta |
 
+## Scripts actuales (package.json raíz)
+
+| Script | Comando | Propósito |
+|---|---|---|
+| `dev` | `concurrently "vite --port=3000" "tsx server/index.ts"` | Frontend + backend simultáneo |
+| `dev:frontend` | `vite --port=3000 --host=0.0.0.0` | Solo frontend |
+| `dev:backend` | `tsx server/index.ts` | Solo backend |
+| `build` | `vite build` | Build frontend para producción |
+| `start` | `NODE_ENV=production tsx server/index.ts` | Producción: API + dist/ |
+| `preview` | `vite preview` | Preview del build |
+| `clean` | `rm -rf dist server.js` | Limpiar artefactos |
+| `lint` | `tsc --noEmit` | Type check |
+
+> Nota: `pnpm install` y `pnpm run build` se usan como validación en cada fase.
+> `pnpm run lint` tiene 3 errores pre-existentes en `LandingPage.tsx` (líneas 223, 259, 886) que no fueron causados por V2.
+
 ## Fases
 
-### Fase 0 — Infraestructura del monorepo (en progreso)
+### Fase 0A — Infraestructura del monorepo ✅
 - [x] Crear `packages/` con subdirectorios: `shared/`, `database/`, `frontend/`, `backend/`
 - [x] Actualizar `pnpm-workspace.yaml` para incluir `packages/*`
 - [x] Crear `tsconfig.base.json` con `strict: true`
-- [ ] Confirmar que V1 sigue funcionando (install, build, lint)
-- [ ] Documentar el plan en `docs/V2_PLAN.md`
+- [x] Crear `docs/V2_PLAN.md`
+- [x] Validar: install, build, lint, git status
+
+### Fase 0B — Documentación de límites ✅
+- [x] Crear `docs/V2_MIGRATION_RULES.md` — reglas de qué tocar y qué no
+- [x] Crear `docs/V2_CHANGELOG.md` — registro de avances
+- [x] Crear `docs/V2_DECISIONS.md` — decisiones técnicas documentadas
+- [x] Actualizar `docs/V2_PLAN.md` — agregar Fase 0B, scripts, progreso
+- [x] Validar: install, build, git status
 
 ### Fase 1 — shared: tipos y validadores compartidos
 - Migrar interfaces de `src/types.ts` a `packages/shared/src/`
@@ -70,11 +93,12 @@
 
 ## Orden recomendado
 
-1. ~~Fase 0~~ ← **estamos aquí**
-2. Fase 1 (shared) —移ir tipos y validadores
-3. Fase 2 (database) — preparar base de datos
-4. Fase 3 (backend) — nuevo backend
-5. Fase 4 (frontend) — nuevo frontend
-6. Fase 5 (CI/CD) — integrar y deployar
+1. ~~Fase 0A — Infraestructura del monorepo~~
+2. ~~Fase 0B — Documentación de límites~~
+3. Fase 1 (shared) — tipos y validadores ← **siguiente**
+4. Fase 2 (database) — capa de datos
+5. Fase 3 (backend) — nuevo backend
+6. Fase 4 (frontend) — nuevo frontend
+7. Fase 5 (CI/CD) — integrar y deployar
 
 Cada fase debe completarse y verificarse con `pnpm run build` y `pnpm run lint` antes de pasar a la siguiente.
