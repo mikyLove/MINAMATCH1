@@ -906,6 +906,38 @@ SQLite se congela como respaldo histórico de V1 y referencia legacy. No recibe 
 
 ---
 
+## Fase 4D FINAL — Cierre de validación (2026-05-28)
+
+### Resumen
+Se cerró la Fase 4D con la validación completa del frontend V2 y backend V2 (PostgreSQL). Se verificaron `lint`, `build`, la suite de tests backend (`test:all`) y los endpoints de health y readiness en una instancia del backend V2 correctamente configurada.
+
+### Acciones ejecutadas
+- Identificado y detenido un proceso antiguo que ocupaba el puerto `3004` y no tenía `DATABASE_URL` configurado.
+- Arrancada una nueva instancia del backend V2 con `DATABASE_PROVIDER=postgres` y `DATABASE_URL=postgres://minamatch:minamatch_dev@127.0.0.1:5433/minamatch_v2`.
+- Verificados `GET /api/v2/health` y `GET /api/v2/ready` — ambos respondieron HTTP 200 con `provider: "postgres"` y `dbStatus: "connected"`.
+- Ejecutados `pnpm run lint`, `pnpm run build` y `pnpm --filter @minamatch/backend test:all` con resultados exitosos.
+
+### Resultados
+- `pnpm run lint` → OK (TypeScript check sin errores).
+- `pnpm run build` → OK (Vite build exitoso; advertencia de chunks grandes no bloqueante).
+- `pnpm --filter @minamatch/backend test:all` → OK (51/51 tests passed: SQLite + PostgreSQL).
+- `/api/v2/health` → HTTP 200: payload incluye `provider: "postgres"`, `dbStatus: "connected"`.
+- `/api/v2/ready` → HTTP 200: payload incluye `provider: "postgres"`, `dbStatus: "connected"`.
+
+### Causa raíz del 404 en `/api/v2/ready`
+El proceso que inicialmente ocupaba `:3004` fue iniciado sin las variables de entorno necesarias (p. ej. `DATABASE_URL`) y ejecutaba una instancia con configuración distinta; al no montar correctamente las rutas de readiness esa instancia devolvía `404`. Tras detenerla y arrancar el backend V2 con las variables correctas, los endpoints respondieron como se esperaba.
+
+### Estado final y verificación
+- Backend V2 activo en puerto `3004` y atendiendo peticiones.
+- Provider: `postgres`, `dbStatus`: `connected`.
+- Tests: 51/51 passed.
+
+### Recomendaciones
+- Mantener `DATABASE_URL`, `DATABASE_PROVIDER` y `JWT_SECRET` centralizados en `.env.local` para evitar arranques inconsistentes.
+
+
+---
+
 ## Fase 4C — Migración de componentes React a V2 API (2026-05-28)
 
 ### Modificado
