@@ -63,14 +63,16 @@
 - [x] Interfaces comunes (`ICandidatesRepo`, `IStudentsRepo`, `IUsersRepo`, `IChatRepo`)
 - [ ] Conectar Express V2 al provider (pendiente)
 
-### Fase 3 — backend: Express V2 ⏳
-- [ ] Nuevo servidor Express en `packages/backend/` (✅ parcial: rutas creadas)
-- [ ] API versionada (`/api/v2/...`) (✅ parcial: endpoints implementados)
-- [ ] Logger estructurado (Pino)
-- [ ] Autenticación JWT con refresh tokens (✅ login/me funcionando)
-- [ ] Conectar rutas V2 al DatabaseProvider
-- [ ] Tests de integración con Vitest + Supertest
-- [ ] Runtime: tsx
+### Fase 3 — backend: Express V2 ✅
+- [x] Nuevo servidor Express en `packages/backend/`
+- [x] API versionada (`/api/v2/...`)
+- [ ] Logger estructurado (Pino) — pendiente
+- [x] Autenticación JWT funcionando
+- [x] Rutas simples conectadas al DatabaseProvider (candidates, students)
+- [x] Modo híbrido PostgreSQL / SQLite según `DATABASE_PROVIDER`
+- [ ] Scenarios pendiente de migrar al provider
+- [ ] Tests de integración con Vitest + Supertest — pendiente
+- [x] Runtime: tsx
 
 ### Fase 4 — frontend: React V2 ❌
 - [ ] Dividir componentes monolíticos en partes más pequeñas
@@ -100,9 +102,9 @@
 1. ~~Fase 0A — Infraestructura del monorepo~~
 2. ~~Fase 0B — Documentación de límites~~
 3. ~~Fase 1 (shared) — tipos y validadores~~
-4. ~~Fase 2 (database) — capa de datos~~ ← **completada**
-5. Fase 3 (backend) — nuevo backend ← **siguiente**
-6. Fase 4 (frontend) — nuevo frontend
+4. ~~Fase 2 (database) — capa de datos~~
+5. ~~Fase 3 (backend) — nuevo backend~~ ← **completada** (pendiente scenarios, tests, logging)
+6. Fase 4 (frontend) — nuevo frontend ← **siguiente**
 7. Fase 5 (CI/CD) — integrar y deployar
 
 Cada fase debe completarse y verificarse con `pnpm run build` y `pnpm run lint` antes de pasar a la siguiente.

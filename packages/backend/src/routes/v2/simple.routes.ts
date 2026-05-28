@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { eq, asc } from 'drizzle-orm';
-import { candidatesRepo, studentsRepo, getDb, scenarios, scenarioOptions } from '@minamatch/database';
+import { getProvider, getDb, scenarios, scenarioOptions } from '@minamatch/database';
 
 const router: Router = Router();
 
-// GET /api/candidates — lista completa con entrevistas (igual que V1)
+// GET /api/candidates — lista completa con entrevistas (usa DatabaseProvider)
 router.get('/candidates', async (_req, res) => {
   try {
-    const rows = await candidatesRepo.findAll();
+    const provider = await getProvider();
+    const rows = await provider.candidates.findAll();
     const enriched = rows.map((c) => ({
       ...c,
       languages: JSON.parse(c.languages || '[]'),
@@ -35,10 +36,11 @@ router.get('/candidates', async (_req, res) => {
   }
 });
 
-// GET /api/candidates/:id — candidato individual con entrevistas (igual que V1)
+// GET /api/candidates/:id — candidato individual con entrevistas (usa DatabaseProvider)
 router.get('/candidates/:id', async (req, res) => {
   try {
-    const row = await candidatesRepo.findById(req.params.id);
+    const provider = await getProvider();
+    const row = await provider.candidates.findById(req.params.id);
     if (!row) {
       return res.status(404).json({ error: 'Candidate not found' });
     }
@@ -68,10 +70,11 @@ router.get('/candidates/:id', async (req, res) => {
   }
 });
 
-// GET /api/students — lista completa con syllabus (igual que V1)
+// GET /api/students — lista completa con syllabus (usa DatabaseProvider)
 router.get('/students', async (_req, res) => {
   try {
-    const rows = await studentsRepo.findAll();
+    const provider = await getProvider();
+    const rows = await provider.students.findAll();
     const enriched = rows.map((s) => ({
       id: s.id,
       name: s.name,
@@ -98,7 +101,8 @@ router.get('/students', async (_req, res) => {
   }
 });
 
-// GET /api/scenarios — lista completa con opciones (igual que V1)
+// GET /api/scenarios — lista completa con opciones (PENDIENTE: migrar a DatabaseProvider)
+// Actualmente usa getDb() + Drizzle directamente. Solo funciona con PostgreSQL.
 router.get('/scenarios', async (_req, res) => {
   try {
     const db = getDb();

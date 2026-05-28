@@ -380,7 +380,6 @@ V1 (src/, server/) ya no depende de archivos locales de tipos/validadores/config
 - Express V2 (`packages/backend/src/routes/v2/`) — sin cambios en rutas ✅
 
 ### Pendiente para siguiente fase
-- Conectar Express V2 al provider (`getProvider().candidates.findAll()` en lugar de `candidatesRepo.findAll()`)
 - Soporte `DATABASE_PROVIDER=sqlite` en el seed
 - Estrategia de sincronización bidireccional PostgreSQL ↔ SQLite
 
@@ -388,4 +387,55 @@ V1 (src/, server/) ya no depende de archivos locales de tipos/validadores/config
 - `pnpm install` ✅
 - `pnpm run build` ✅ (Vite build exitoso)
 - `pnpm run lint` ✅ (tsc --noEmit, 0 errores)
-- V1 sin cambios — git status confirma solo archivos nuevos o migrados`
+- V1 sin cambios — git status confirma solo archivos nuevos o migrados
+
+---
+
+## Fase 3A — Rutas simples V2 conectadas al DatabaseProvider (2026-05-27)
+
+### Modificado
+- `packages/backend/src/routes/v2/simple.routes.ts` — candidates y students usan `getProvider()` en lugar de repos directos
+- `packages/backend/src/index.ts` — startup log refleja el provider activo y muestra que soporta ambos modos
+
+### Endpoints migrados a DatabaseProvider
+
+| Endpoint | Antes | Ahora | SQLite | PostgreSQL |
+|----------|-------|-------|--------|-----------|
+| `GET /api/candidates` | `candidatesRepo.findAll()` | `getProvider().candidates.findAll()` | ✅ 6 candidatos | ✅ |
+| `GET /api/candidates/:id` | `candidatesRepo.findById()` | `getProvider().candidates.findById()` | ✅ | ✅ |
+| `GET /api/students` | `studentsRepo.findAll()` | `getProvider().students.findAll()` | ✅ 2 estudiantes | ✅ |
+| `GET /api/scenarios` | `getDb()` + Drizzle | sin cambios (PENDIENTE) | ❌ requiere PG | ✅ |
+
+### Prueba con SQLite (`DATABASE_PROVIDER=sqlite`)
+```bash
+$ curl http://localhost:3099/api/candidates
+→ 6 candidatos con entrevistas ✓
+$ curl http://localhost:3099/api/candidates/1
+→ 1 candidato individual ✓
+$ curl http://localhost:3099/api/students
+→ 2 estudiantes con syllabus ✓
+$ curl http://localhost:3099/api/scenarios
+→ {"error":"Internal server error"} (requiere PostgreSQL)
+```
+
+### Scenarios — pendiente
+El endpoint `/api/scenarios` aún usa `getDb()` + Drizzle directamente. Funciona solo con PostgreSQL.
+Para la próxima fase se agregará `IScenariosRepo` al provider y se implementará para ambos motores.
+
+### No tocado
+- `server/db.ts` — V1 SQLite intacto ✅
+- `server/routes/*` — V1 Express intacto ✅
+- `src/` — frontend V1 intacto ✅
+- `data/minamatch.db` — datos V1 intactos ✅
+- `packages/backend/src/routes/v2/auth.routes.ts` — auth sin cambios ✅
+- `packages/backend/src/routes/v2/chat.routes.ts` — chat sin cambios ✅
+- `packages/backend/src/routes/v2/agents.routes.ts` — agents sin cambios ✅
+- `packages/database/src/repositories/*` — repos PG sin cambios ✅
+- `packages/database/src/sqlite/*` — repos SQLite sin cambios ✅
+
+### Validación
+- `pnpm install` ✅
+- `pnpm run build` ✅ (Vite build exitoso)
+- `pnpm run lint` ✅ (tsc --noEmit, 0 errores)
+- `DATABASE_PROVIDER=sqlite` → curl endpoints V2 responden desde SQLite ✅
+- V1 sin cambios — git status confirma solo archivos esperados`

@@ -22,7 +22,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10kb' }));
 
-// Rutas V2 con repositorios tipados (PostgreSQL)
+// Rutas V2 con repositorios tipados (PostgreSQL o SQLite según DATABASE_PROVIDER)
 app.use('/api', simpleRoutes);
 app.use('/api/v2/auth', authRoutes);
 app.use('/api/v2/chat', chatRoutes);
@@ -35,7 +35,7 @@ app.get('/api/v2/health', (_req, res) => {
 
 app.listen(PORT, () => {
   console.log(`[V2] MinaMatch API running on http://localhost:${PORT}`);
-  console.log(`[V2] Database: PostgreSQL (Drizzle ORM)`);
+  console.log(`[V2] Database Provider: ${process.env.DATABASE_PROVIDER || 'auto'} (${process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'} — cambia con DATABASE_PROVIDER)`);
   console.log(`[V2] Endpoints:`);
   console.log(`  GET /api/candidates`);
   console.log(`  GET /api/candidates/:id`);
