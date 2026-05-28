@@ -98,8 +98,8 @@
 - [x] `VITE_API_URL` env var
 - [x] Validación: build ✅, lint ✅
 
-### Fase 4B+ — Migración de pantallas a V2 ❌
-- [ ] Migrar AuthContext.tsx a endpoints /api/v2/auth
+### Fase 4B+ — Migración de pantallas a V2 🔄
+- [x] Migrar AuthContext.tsx a endpoints /api/v2/auth
 - [ ] Migrar BuscadorTalento a V2 API
 - [ ] Migrar SemillerosDashboard/List a V2 API
 - [ ] Migrar ScenarioAssessment a V2 API
@@ -159,7 +159,7 @@ A partir de la Fase 3I, V2 **abandona la arquitectura híbrida** PostgreSQL/SQLi
 5. ~~Fase 3 (backend) — nuevo backend~~ ← **completada** (incluye F3F: Pino, F3G: Health, F3H: CI/CD)
 6. ~~Fase 3I — PostgreSQL como fuente única de verdad~~ ← **completada**
 7. ~~Fase 4A — Cliente API frontend V2~~ ← **completada**
-8. Fase 4B+ — Migración de pantallas a V2 ← **siguiente**
+8. Fase 4B+ — Migración de pantallas a V2 ← **en progreso** (AuthContext listo)
 9. Fase 5 (deploy) — deploy V2 público con PostgreSQL ← **pendiente**
 
 Cada fase debe completarse y verificarse con `pnpm run build` y `pnpm run lint` antes de pasar a la siguiente.

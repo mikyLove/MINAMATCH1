@@ -903,3 +903,33 @@ SQLite se congela como respaldo histórico de V1 y referencia legacy. No recibe 
 ### Validación
 - `pnpm run build` ✅
 - `pnpm run lint` ✅ (solo 3 errores pre-existentes V1)
+
+---
+
+## Fase 4B — AuthContext migrado a autenticación V2 (2026-05-28)
+
+### Modificado
+- `src/AuthContext.tsx` — migrado de V1 a V2 API:
+
+  | Aspecto | Antes (V1) | Ahora (V2) |
+  |---------|-----------|-----------|
+  | Login | `fetch(\`\${BASE_URL}/api/auth/login\`)` | `v2Login({ email, password })` |
+  | Session restore | `fetch(\`\${BASE_URL}/api/auth/me\`)` | `v2VerifyToken()` |
+  | Offline fallback | Credenciales hardcodeadas (`admin@minamatch.pe`/`admin123`) | Eliminado (PostgreSQL siempre disponible) |
+  | Imports | `BASE_URL` desde `./api` | `v2Login`, `v2VerifyToken` desde `./lib/api/auth` |
+  | Error handling | `res.json().error` | `V2ApiError` tipado |
+
+### Mantenido (sin cambios)
+- `minamatch_token` en localStorage (mismo que V1)
+- Guest token (`guest-token`) con datos de invitado
+- Interfaz `User` (id, name, email, role, avatar)
+- `loginAsGuest()`, `logout()`, `loading` state
+- Provider/Consumer API (`AuthProvider`, `useAuth`)
+
+### Eliminado
+- Fallback offline con credenciales hardcodeadas — PostgreSQL es la fuente única de verdad
+- Dependencia directa de `src/api/` (V1) en AuthContext
+
+### Validación
+- `pnpm run build` ✅
+- `pnpm run lint` ✅ (solo 3 errores pre-existentes V1)
