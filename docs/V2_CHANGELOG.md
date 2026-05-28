@@ -779,3 +779,62 @@ if (model) {
 - `pnpm --filter @minamatch/backend test:sqlite` → 41/41 ✅
 - `pnpm --filter @minamatch/backend test:postgres` → 10/10 ✅
 - `pnpm --filter @minamatch/backend test:all` → 51/51 ✅
+
+---
+
+## Fase 3H — CI/CD con GitHub Actions (2026-05-28)
+
+### Añadido
+- `.github/workflows/ci.yml` — pipeline CI con 4 jobs paralelos:
+  - **lint** — type checks: V2 backend (0 errores), V2 database (0 errores), V1 root (informacional)
+  - **build** — `vite build` (verifica que V1 sigue compilando)
+  - **test-sqlite** — 41 tests contra SQLite (sin dependencias externas)
+  - **test-postgres** — 10 tests contra PostgreSQL 16 via service container
+- `docs/V2_CICD.md` — documentación del pipeline, diagrama, tabla de tests
+
+### Detalles del pipeline
+
+**Disparadores:** push y PR a `version-2` y `main`.
+
+**Concurrencia:** los jobs se cancelan si un nuevo push llega al mismo branch.
+
+**Caching:** `actions/setup-node@v4` con `cache: pnpm` maneja automáticamente el store de pnpm.
+
+**PostgreSQL en CI:**
+```yaml
+services:
+  postgres:
+    image: postgres:16
+    env:
+      POSTGRES_USER: minamatch
+      POSTGRES_PASSWORD: minamatch_dev
+      POSTGRES_DB: minamatch_v2
+    options: --health-cmd pg_isready --health-interval 10s --health-retries 5
+```
+
+El job espera a que PostgreSQL esté listo, corre migraciones (`pnpm db:migrate`), seed (`pnpm db:seed`), y luego ejecuta los tests PostgreSQL. Si el servicio no arranca, los tests se saltan silenciosamente (vía TCP port check en el test file).
+
+**Artifacts en fallo:** si `test-sqlite` o `test-postgres` fallan, se suben los snapshots como artifact de GitHub Actions (retención 7 días).
+
+### Cobertura total
+
+| Suite | Tests | Proveedor | Dependencia externa |
+|-------|-------|-----------|-------------------|
+| SQLite | 41 | better-sqlite3 | `data/minamatch.db` (committed) |
+| PostgreSQL | 10 | Drizzle + postgres.js | Service container (postgres:16) |
+| **Total** | **51** | — | — |
+
+### No tocado
+- `server/`, `src/`, `data/` — V1 intacto ✅
+- `packages/backend/src/routes/`, `packages/database/src/` — sin cambios
+- `.env.example`, `docs/` existentes — sin cambios
+
+### Validación
+- Sintaxis YAML validada manualmente ✅
+- Todos los comandos del workflow verificados contra scripts existentes:
+  - `pnpm install --frozen-lockfile` ✅
+  - `npx tsc --noEmit --project packages/backend/tsconfig.json` ✅
+  - `npx tsc --noEmit --project packages/database/tsconfig.json` ✅
+  - `pnpm run build` ✅
+  - `pnpm --filter @minamatch/backend test:sqlite` ✅
+  - `pnpm db:migrate && pnpm db:seed && pnpm --filter @minamatch/backend test:postgres` ✅

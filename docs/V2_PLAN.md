@@ -109,8 +109,8 @@
 2. ~~Fase 0B — Documentación de límites~~
 3. ~~Fase 1 (shared) — tipos y validadores~~
 4. ~~Fase 2 (database) — capa de datos~~
-5. ~~Fase 3 (backend) — nuevo backend~~ ← **completada** (incluye Fase 3F: Pino logging, Fase 3G: Health/Readiness)
+5. ~~Fase 3 (backend) — nuevo backend~~ ← **completada** (F3F: Pino, F3G: Health/Readiness, F3H: CI/CD)
 6. Fase 4 (frontend) — nuevo frontend ← **siguiente**
-7. Fase 5 (CI/CD) — integrar y deployar
+7. Fase 5 (CI/CD) — deploy automático ← **pendiente** (CI listo, falta deploy)
 
 Cada fase debe completarse y verificarse con `pnpm run build` y `pnpm run lint` antes de pasar a la siguiente.
