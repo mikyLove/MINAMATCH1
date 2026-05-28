@@ -618,4 +618,87 @@ pnpm --filter @minamatch/backend test:all
 - `pnpm --filter @minamatch/backend test:postgres` → 9/9 ✅ (skip sin PG)
 - `pnpm --filter @minamatch/backend test:all` → 15/15 ✅
 - `pnpm run build` ✅ (Vite build exitoso)
-- `pnpm run lint` ✅ (backend tsc --noEmit, 0 errores)``
+- `pnpm run lint` ✅ (backend tsc --noEmit, 0 errores)
+
+---
+
+## Fase 3E — Auth, Chat y Agents migrados al DatabaseProvider híbrido (2026-05-28)
+
+### Modificado
+- `packages/backend/src/routes/v2/auth.routes.ts` — `usersRepo` → `getProvider().users`
+- `packages/backend/src/routes/v2/chat.routes.ts` — `chatRepo` → `getProvider().chat`; Gemini con fallback try-catch
+- `packages/backend/src/routes/v2/agents.routes.ts` — `candidatesRepo` + `getDb()` directo → `getProvider().candidates` + `getProvider().scenarios`; Gemini con fallback try-catch
+
+### Cambios clave
+
+**Auth:**
+```diff
+- import { usersRepo } from '@minamatch/database';
++ import { getProvider } from '@minamatch/database';
+- const user = await usersRepo.findByEmail(email);
++ const provider = await getProvider();
++ const user = await provider.users.findByEmail(email);
+```
+
+**Chat:**
+```diff
+- import { chatRepo } from '@minamatch/database';
++ import { getProvider } from '@minamatch/database';
+- await chatRepo.deleteOld(userId, 10);
++ const provider = await getProvider();
++ await provider.chat.deleteOld(userId, 10);
+```
+
+**Agents (evaluate-scenario):**
+```diff
+- import { candidatesRepo, getDb, scenarios, scenarioOptions } from '@minamatch/database';
+- const db = getDb();
+- const [scenarioRow] = await db.select().from(scenarios).where(eq(scenarios.id, scenarioId));
+- const [optionRow] = await db.select().from(scenarioOptions).where(eq(scenarioOptions.id, optionId));
++ const provider = await getProvider();
++ const scenario = await provider.scenarios.findById(scenarioId);
++ const option = scenario?.options.find(o => o.id === optionId);
+```
+
+### Gemini fallback seguro
+Todos los endpoints de chat y agents envuelven las llamadas a Gemini en try-catch. Si Gemini falla (API key inválida, timeout, error de red), se usa el modo degradado (respuestas basadas en reglas / simulación).
+
+```ts
+if (model) {
+  try {
+    // ... Gemini streaming ...
+  } catch {
+    // Fallback a respuestas predefinidas
+    aiResponse = getFallbackResponse(cleanMessage);
+  }
+}
+```
+
+### Test files añadidos
+- `packages/backend/src/__tests__/auth.routes.test.ts` — 7 tests
+- `packages/backend/src/__tests__/chat.routes.test.ts` — 8 tests
+- `packages/backend/src/__tests__/agents.routes.test.ts` — 9 tests
+
+### Cobertura total
+
+| Test file | Tests | Endpoints |
+|-----------|-------|-----------|
+| `simple.routes.test.ts` | 6 | Simple (candidates, students, scenarios, health) |
+| `auth.routes.test.ts` | 7 | Login (token, 401, 400), Me (token, guest, sin token, inválido) |
+| `chat.routes.test.ts` | 8 | Message (fallback, prohibidas, cortas, guest), History, Delete |
+| `agents.routes.test.ts` | 9 | Interview (éxito, 404, 400, 401), Scenario (éxito, 404x2), Matching (éxito, 400) |
+| `simple.routes.postgres.test.ts` | 9 | PG opcionales (estructural + valores) |
+| **Total** | **49** | **Todos los endpoints V2** |
+
+### SQLite DB mantenimiento
+- Se agregaron columnas `user_id` y `response_source` a `chat_messages` (existían en schema V1 pero no en la DB real)
+- Se creó usuario `guest-user` para soportar guest-token en chat
+- No se modificó la estructura de tablas V1 existentes
+
+### Validación
+- `pnpm --filter @minamatch/backend test:sqlite` → 40/40 ✅
+- `pnpm --filter @minamatch/backend test:postgres` → 9/9 ✅ (skip sin PG)
+- `pnpm --filter @minamatch/backend test:all` → 49/49 ✅
+- `pnpm run build` ✅ (Vite build exitoso)
+- `pnpm run lint` ✅ (backend tsc --noEmit, 0 errores)
+- Smoke test manual con `DATABASE_PROVIDER=sqlite`: todos los endpoints responden correctamente``

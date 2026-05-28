@@ -2,12 +2,12 @@ import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { loginSchema } from '@minamatch/shared';
-import { usersRepo } from '@minamatch/database';
+import { getProvider } from '@minamatch/database';
 import { getJwtSecret, authMiddleware, AuthRequest } from '../../middleware/auth.middleware';
 
 const router: Router = Router();
 
-// POST /api/v2/auth/login — autenticación con PostgreSQL
+// POST /api/v2/auth/login — autenticación con DatabaseProvider híbrido
 router.post('/login', async (req, res: Response) => {
   try {
     const parsed = loginSchema.safeParse(req.body);
@@ -17,7 +17,8 @@ router.post('/login', async (req, res: Response) => {
     }
 
     const { email, password } = parsed.data;
-    const user = await usersRepo.findByEmail(email);
+    const provider = await getProvider();
+    const user = await provider.users.findByEmail(email);
 
     if (!user) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
@@ -46,19 +47,17 @@ router.post('/login', async (req, res: Response) => {
     });
   } catch (err) {
     console.error('[V2] POST /auth/login error:', err);
-    // Fallback: si PostgreSQL falla, devolver error genérico
     res.status(503).json({ error: 'Servicio de autenticación no disponible' });
   }
 });
 
-// GET /api/v2/auth/me — perfil del usuario autenticado (PostgreSQL)
+// GET /api/v2/auth/me — perfil del usuario autenticado
 router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'No autenticado' });
     }
 
-    // Guest users: devolver datos del token sin consultar DB
     if (req.user.role === 'guest') {
       return res.json({
         id: req.user.id,
@@ -69,7 +68,8 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const user = await usersRepo.findById(req.user.id);
+    const provider = await getProvider();
+    const user = await provider.users.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }

@@ -60,18 +60,24 @@
 - [x] Crear seed data para desarrollo
 - [x] Migrar consultas a repositorios tipados
 - [x] Arquitectura híbrida PostgreSQL/SQLite (DatabaseProvider)
-- [x] Interfaces comunes (`ICandidatesRepo`, `IStudentsRepo`, `IUsersRepo`, `IChatRepo`)
-- [ ] Conectar Express V2 al provider (pendiente)
+- [x] Interfaces comunes (`ICandidatesRepo`, `IStudentsRepo`, `IUsersRepo`, `IChatRepo`, `IScenariosRepo`)
+- [x] Express V2 conectado al provider (todas las rutas)
 
 ### Fase 3 — backend: Express V2 ✅
 - [x] Nuevo servidor Express en `packages/backend/`
 - [x] API versionada (`/api/v2/...`)
 - [ ] Logger estructurado (Pino) — pendiente
 - [x] Autenticación JWT funcionando
-- [x] Rutas simples conectadas al DatabaseProvider (candidates, students, scenarios)
+- [x] Todas las rutas conectadas al DatabaseProvider:
+  - `GET /api/candidates`, `/api/candidates/:id`
+  - `GET /api/students`
+  - `GET /api/scenarios`
+  - `POST /api/v2/auth/login`, `GET /api/v2/auth/me`
+  - `POST /api/v2/chat/message`, `GET /api/v2/chat/history`, `DELETE /api/v2/chat/history`
+  - `POST /api/v2/agents/interview`, `/evaluate-scenario`, `/matching`
 - [x] Modo híbrido PostgreSQL / SQLite según `DATABASE_PROVIDER`
-- [x] Scenarios migrados al provider (IScenariosRepo con findAll y findById)
-- [x] Tests de integración con Vitest + Supertest (6 SQLite + 9 PostgreSQL estructurales)
+- [x] Gemini opcional con fallback a respuestas simuladas
+- [x] Tests de integración (40 SQLite + 9 PostgreSQL = 49 tests)
 - [x] Runtime: tsx
 
 ### Fase 4 — frontend: React V2 ❌

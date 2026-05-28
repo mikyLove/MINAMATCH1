@@ -19,20 +19,20 @@ Una **capa de abstracción** (`DatabaseProvider`) que expone una interfaz común
                │  (singleton)    │
                └───────┬────────┘
                        │
-          ┌────────────┼────────────┐
-          ▼            ▼            ▼
-   ┌──────────┐ ┌──────────┐ ┌──────────┐
-   │candidates│ │students  │ │users     │
-   │Repo      │ │Repo      │ │Repo      │
-   └──────────┘ └──────────┘ └──────────┘
-          ▲            ▲            ▲
-          │            │            │
-   ┌──────┴────────────┴────────────┴──┐
-   │        DatabaseProvider           │
-   │  (interfaz común: ICandidatesRepo,│
-   │   IStudentsRepo, IUsersRepo,      │
-   │   IChatRepo)                      │
-   └────────────────┬──────────────────┘
+           ┌────────────┬────────────┬────────────┐
+           ▼            ▼            ▼            ▼
+    ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+    │candidates│ │students  │ │users     │ │scenarios │
+    │Repo      │ │Repo      │ │Repo      │ │Repo      │
+    └──────────┘ └──────────┘ └──────────┘ └──────────┘
+           ▲            ▲            ▲            ▲
+           │            │            │            │
+    ┌──────┴────────────┴────────────┴────────────┴──┐
+    │        DatabaseProvider                        │
+    │  (interfaz común: ICandidatesRepo,             │
+    │   IStudentsRepo, IUsersRepo, IChatRepo,        │
+    │   IScenariosRepo)                              │
+    └────────────────────────┬───────────────────────┘
                     │
          ┌──────────┴──────────┐
          ▼                     ▼
@@ -118,10 +118,20 @@ DATABASE_URL="postgres://minamatch:minamatch_dev@localhost:5432/minamatch_v2" \
 
 ### Ambos
 ```bash
-pnpm --filter @minamatch/backend test:all    # 15 tests total
+pnpm --filter @minamatch/backend test:all    # 49 tests total (40 SQLite + 9 PostgreSQL)
 ```
 
-## Pendiente para Fase 3E o posterior
+### Cobertura completa
 
-- Conectar auth/chat/agents al provider (actualmente usan repos directamente)
+| Test file | Tests | Endpoints cubiertos |
+|-----------|-------|---------------------|
+| `simple.routes.test.ts` | 6 | `GET /api/candidates`, `/candidates/:id`, `/students`, `/scenarios`, `/health` (estructural) |
+| `auth.routes.test.ts` | 7 | `POST /api/v2/auth/login` (token, 401, 400), `GET /api/v2/auth/me` (token, guest, sin token, inválido) |
+| `chat.routes.test.ts` | 8 | `POST /api/v2/chat/message` (fallback, prohibidas, cortas, guest), `GET /history`, `DELETE /history` |
+| `agents.routes.test.ts` | 9 | `POST /api/v2/agents/interview` (éxito, 404, 400, 401), `/evaluate-scenario` (éxito, 404, 404), `/matching` (éxito, 400) |
+| `simple.routes.postgres.test.ts` | 9 | PG opcionales: estructural + valores específicos para candidates, students, scenarios |
+
+## Pendiente
+
 - Estrategia de sincronización entre PostgreSQL y SQLite
+- Logger estructurado (Pino)

@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { eq } from 'drizzle-orm';
 import { AI_CONFIG } from '@minamatch/shared';
-import { candidatesRepo, getDb, scenarios, scenarioOptions } from '@minamatch/database';
+import { getProvider } from '@minamatch/database';
 import { authMiddleware } from '../../middleware/auth.middleware';
 import { evaluationModel } from '../../services/gemini';
 
@@ -28,7 +27,8 @@ router.post('/interview', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'El contenido excede el límite permitido de caracteres.' });
     }
 
-    const candidate = await candidatesRepo.findById(candidateId);
+    const provider = await getProvider();
+    const candidate = await provider.candidates.findById(candidateId);
     if (!candidate) {
       return res.status(404).json({ error: 'Candidate not found' });
     }
@@ -36,7 +36,8 @@ router.post('/interview', async (req: Request, res: Response) => {
     let evaluation: string;
 
     if (evaluationModel) {
-      const prompt = `Actúa como un reclutador técnico senior especializado en minería subterránea en los Andes peruanos.
+      try {
+        const prompt = `Actúa como un reclutador técnico senior especializado en minería subterránea en los Andes peruanos.
 Evalúa de forma crítica y objetiva la siguiente respuesta.
 Criterios de evaluación:
 - Conocimiento de seguridad (D.S. 024-2016-EM).
@@ -72,14 +73,14 @@ Proporciona:
 3. Áreas de mejora
 4. Recomendación para contratación`;
 
-      const result = await evaluationModel.generateContent(prompt);
-      evaluation = result.text || 'No se pudo generar evaluación.';
+        const result = await evaluationModel.generateContent(prompt);
+        evaluation = result.text || 'No se pudo generar evaluación.';
+      } catch {
+        console.warn('[V2] Gemini evaluation failed, using simulated evaluation');
+        evaluation = getSimulatedEvaluation(candidate, cleanQuestion, cleanAnswer);
+      }
     } else {
-      const skills = typeof candidate.skills === 'string' ? candidate.skills : JSON.stringify(candidate.skills);
-      evaluation = `Evaluación simulada para ${candidate.name}:\n\n` +
-        `Puntuación: 85/100\n` +
-        `Fortalezas: Experiencia comprobada en ${skills}, excelente adaptación a altitud.\n` +
-        `Recomendación: Perfil apto para operaciones mineras en Puno.`;
+      evaluation = getSimulatedEvaluation(candidate, cleanQuestion, cleanAnswer);
     }
 
     res.json({ evaluation, candidate: { id: candidate.id, name: candidate.name, title: candidate.title } });
@@ -97,25 +98,29 @@ router.post('/evaluate-scenario', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'scenarioId and optionId are required' });
     }
 
-    const db = getDb();
-    const [scenarioRow] = await db.select().from(scenarios).where(eq(scenarios.id, scenarioId)).limit(1);
-    const [optionRow] = await db.select().from(scenarioOptions).where(eq(scenarioOptions.id, optionId)).limit(1);
+    const provider = await getProvider();
+    const scenario = await provider.scenarios.findById(scenarioId);
+    if (!scenario) {
+      return res.status(404).json({ error: 'Scenario not found' });
+    }
 
-    if (!scenarioRow || !optionRow) {
-      return res.status(404).json({ error: 'Scenario or option not found' });
+    const option = scenario.options.find(o => o.id === optionId);
+    if (!option) {
+      return res.status(404).json({ error: 'Option not found' });
     }
 
     let feedback: string;
 
     if (evaluationModel) {
-      const prompt = `Evalúa la decisión del operador minero en este escenario de seguridad:
+      try {
+        const prompt = `Evalúa la decisión del operador minero en este escenario de seguridad:
 
-Escenario: ${scenarioRow.title}
-Categoría: ${scenarioRow.category}
-Descripción: ${scenarioRow.description}
+Escenario: ${scenario.title}
+Categoría: ${scenario.category}
+Descripción: ${scenario.description}
 
-Decisión tomada: ${optionRow.text}
-Impacto - Calma: ${optionRow.calma}/10, Seguridad: ${optionRow.seguridad}/10, Tiempo: ${optionRow.tiempo}
+Decisión tomada: ${option.text}
+Impacto - Calma: ${option.impact.calma}/10, Seguridad: ${option.impact.seguridad}/10, Tiempo: ${option.impact.tiempo}
 
 ### MARCO DE REFERENCIA:
 - Una decisión de 10/10 en seguridad SIEMPRE prioriza la paralización de la labor ante riesgos no controlados (gases, desprendimientos).
@@ -129,19 +134,17 @@ Impacto - Calma: ${optionRow.calma}/10, Seguridad: ${optionRow.seguridad}/10, Ti
 
 Proporciona feedback técnico sobre esta decisión en el contexto de minería subterránea peruana.`;
 
-      const result = await evaluationModel.generateContent(prompt);
-      feedback = result.text || 'No se pudo generar feedback.';
+        const result = await evaluationModel.generateContent(prompt);
+        feedback = result.text || 'No se pudo generar feedback.';
+      } catch {
+        console.warn('[V2] Gemini scenario evaluation failed, using simulated feedback');
+        feedback = getSimulatedScenarioFeedback(option);
+      }
     } else {
-      const seguridad = optionRow.seguridad ?? 5;
-      const safetyLevel = seguridad >= 8 ? 'Alta' : seguridad >= 5 ? 'Media' : 'Baja';
-      feedback = `Decisión evaluada: "${optionRow.text}"\n\n` +
-        `Nivel de Seguridad: ${safetyLevel} (${seguridad}/10)\n` +
-        `Impacto en Calma: ${optionRow.calma}/10\n` +
-        `Tiempo de Respuesta: ${optionRow.tiempo}\n\n` +
-        `${seguridad >= 8 ? 'Excelente decisión priorizando la seguridad del personal.' : seguridad >= 5 ? 'Decisión aceptable pero con oportunidades de mejora en protocolos de seguridad.' : 'Esta decisión implica riesgos significativos. Revisar protocolos de seguridad minera.'}`;
+      feedback = getSimulatedScenarioFeedback(option);
     }
 
-    res.json({ feedback, scenario: { id: scenarioRow.id, title: scenarioRow.title }, option: { id: optionRow.id, text: optionRow.text } });
+    res.json({ feedback, scenario: { id: scenario.id, title: scenario.title }, option: { id: option.id, text: option.text } });
   } catch (error) {
     console.error('[V2] Scenario agent error:', error);
     res.status(500).json({ error: 'Error evaluating scenario' });
@@ -161,12 +164,14 @@ router.post('/matching', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Los requerimientos exceden el límite permitido de caracteres.' });
     }
 
-    const allCandidates = await candidatesRepo.findAll();
+    const provider = await getProvider();
+    const allCandidates = await provider.candidates.findAll();
 
     let analysis: string;
 
     if (evaluationModel) {
-      const prompt = `Como agente de matching minero, analiza estos candidatos contra los requerimientos:
+      try {
+        const prompt = `Como agente de matching minero, analiza estos candidatos contra los requerimientos:
 
 Requerimientos: ${JSON.stringify(requirements)}
 
@@ -183,15 +188,14 @@ Proporciona:
 2. Justificación técnica de cada recomendación
 3. Candidatos no recomendados y por qué`;
 
-      const result = await evaluationModel.generateContent(prompt);
-      analysis = result.text || 'No se pudo generar análisis.';
+        const result = await evaluationModel.generateContent(prompt);
+        analysis = result.text || 'No se pudo generar análisis.';
+      } catch {
+        console.warn('[V2] Gemini matching failed, using simulated analysis');
+        analysis = getSimulatedMatchingAnalysis(allCandidates);
+      }
     } else {
-      const sorted = [...allCandidates].sort((a, b) => (b.matchRating ?? 0) - (a.matchRating ?? 0));
-      const top3 = sorted.slice(0, 3);
-      analysis = `Análisis de Matching - ${allCandidates.length} candidatos evaluados\n\n` +
-        `Top 3 Recomendados:\n` +
-        top3.map((c, i) => `${i + 1}. ${c.name} - ${c.title} (${c.matchRating}% match)\n   Skills: ${c.skills}, Altitud: ${c.altitudeFit}msnm`).join('\n\n') +
-        `\n\nBasado en experiencia técnica, certificaciones y adaptación a altitud.`;
+      analysis = getSimulatedMatchingAnalysis(allCandidates);
     }
 
     res.json({ analysis, totalCandidates: allCandidates.length });
@@ -200,5 +204,32 @@ Proporciona:
     res.status(500).json({ error: 'Error in matching analysis' });
   }
 });
+
+function getSimulatedEvaluation(candidate: any, _question: string, _answer: string): string {
+  const skills = typeof candidate.skills === 'string' ? candidate.skills : JSON.stringify(candidate.skills);
+  return `Evaluación simulada para ${candidate.name}:\n\n` +
+    `Puntuación: 85/100\n` +
+    `Fortalezas: Experiencia comprobada en ${skills}, excelente adaptación a altitud.\n` +
+    `Recomendación: Perfil apto para operaciones mineras en Puno.`;
+}
+
+function getSimulatedScenarioFeedback(option: any): string {
+  const seguridad = option.impact.seguridad ?? 5;
+  const safetyLevel = seguridad >= 8 ? 'Alta' : seguridad >= 5 ? 'Media' : 'Baja';
+  return `Decisión evaluada: "${option.text}"\n\n` +
+    `Nivel de Seguridad: ${safetyLevel} (${seguridad}/10)\n` +
+    `Impacto en Calma: ${option.impact.calma}/10\n` +
+    `Tiempo de Respuesta: ${option.impact.tiempo}\n\n` +
+    `${seguridad >= 8 ? 'Excelente decisión priorizando la seguridad del personal.' : seguridad >= 5 ? 'Decisión aceptable pero con oportunidades de mejora en protocolos de seguridad.' : 'Esta decisión implica riesgos significativos. Revisar protocolos de seguridad minera.'}`;
+}
+
+function getSimulatedMatchingAnalysis(allCandidates: any[]): string {
+  const sorted = [...allCandidates].sort((a: any, b: any) => (b.matchRating ?? 0) - (a.matchRating ?? 0));
+  const top3 = sorted.slice(0, 3);
+  return `Análisis de Matching - ${allCandidates.length} candidatos evaluados\n\n` +
+    `Top 3 Recomendados:\n` +
+    top3.map((c: any, i: number) => `${i + 1}. ${c.name} - ${c.title} (${c.matchRating}% match)\n   Skills: ${c.skills}, Altitud: ${c.altitudeFit}msnm`).join('\n\n') +
+    `\n\nBasado en experiencia técnica, certificaciones y adaptación a altitud.`;
+}
 
 export default router;

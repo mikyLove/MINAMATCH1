@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { chatMessageSchema } from '@minamatch/shared';
-import { chatRepo } from '@minamatch/database';
+import { getProvider } from '@minamatch/database';
 import { authMiddleware, AuthRequest } from '../../middleware/auth.middleware';
 import { createChatModel } from '../../services/gemini';
 
@@ -43,38 +43,48 @@ router.post('/message', async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'El mensaje contiene términos no permitidos por la política de seguridad.' });
     }
 
+    const provider = await getProvider();
+
     // Limpiar mensajes antiguos (>10 minutos)
-    await chatRepo.deleteOld(userId, 10);
+    await provider.chat.deleteOld(userId, 10);
 
     // Recuperar historial
-    const dbHistory = await chatRepo.findHistory(userId);
+    const dbHistory = await provider.chat.findHistory(userId);
 
     // Guardar mensaje del usuario
-    await chatRepo.addMessage({ userId, role: 'user', content: cleanMessage, responseSource: null });
+    await provider.chat.addMessage({ userId, role: 'user', content: cleanMessage, responseSource: null });
 
     let aiResponse: string;
     let source: 'model' | 'fallback' = 'fallback';
 
     if (model) {
-      const chatSession = model.startChat({
-        history: dbHistory.map(m => ({
-          role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: m.content }],
-        })),
-      });
+      try {
+        const chatSession = model.startChat({
+          history: dbHistory.map(m => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.content }],
+          })),
+        });
 
-      const result = await chatSession.sendMessageStream({ message: cleanMessage });
-      aiResponse = '';
+        const result = await chatSession.sendMessageStream({ message: cleanMessage });
+        aiResponse = '';
 
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
 
-      for await (const chunk of result) {
-        const chunkText = chunk.text ?? '';
-        aiResponse += chunkText;
-        res.write(chunkText);
+        for await (const chunk of result) {
+          const chunkText = chunk.text ?? '';
+          aiResponse += chunkText;
+          res.write(chunkText);
+        }
+        source = 'model';
+        if (!aiResponse) aiResponse = 'Lo siento, no pude generar una respuesta.';
+      } catch {
+        console.warn('[V2] Gemini model failed, using fallback response');
+        aiResponse = getFallbackResponse(cleanMessage);
+        source = 'fallback';
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.write(aiResponse);
       }
-      source = 'model';
-      if (!aiResponse) aiResponse = 'Lo siento, no pude generar una respuesta.';
     } else {
       aiResponse = getFallbackResponse(cleanMessage);
       source = 'fallback';
@@ -83,7 +93,7 @@ router.post('/message', async (req: AuthRequest, res: Response) => {
     }
 
     // Guardar respuesta de IA
-    await chatRepo.addMessage({ userId, role: 'assistant', content: aiResponse, responseSource: source });
+    await provider.chat.addMessage({ userId, role: 'assistant', content: aiResponse, responseSource: source });
     res.end();
   } catch (error) {
     console.error('[V2] Chat message error:', error);
@@ -102,7 +112,8 @@ router.get('/history', async (req: AuthRequest, res: Response) => {
     if (!userId) {
       return res.status(401).json({ error: 'No autenticado' });
     }
-    const history = await chatRepo.findHistory(userId);
+    const provider = await getProvider();
+    const history = await provider.chat.findHistory(userId);
     res.json(history);
   } catch (err) {
     console.error('[V2] GET /chat/history error:', err);
@@ -117,8 +128,9 @@ router.delete('/history', async (req: AuthRequest, res: Response) => {
     if (!userId) {
       return res.status(401).json({ error: 'No autenticado' });
     }
-    await chatRepo.clearHistory(userId);
-    await chatRepo.addMessage({ userId, role: 'assistant', content: 'Historial eliminado. ¿En qué puedo ayudarte?', responseSource: 'fallback' });
+    const provider = await getProvider();
+    await provider.chat.clearHistory(userId);
+    await provider.chat.addMessage({ userId, role: 'assistant', content: 'Historial eliminado. ¿En qué puedo ayudarte?', responseSource: 'fallback' });
     res.json({ success: true });
   } catch (err) {
     console.error('[V2] DELETE /chat/history error:', err);
