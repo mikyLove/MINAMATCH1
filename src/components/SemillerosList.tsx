@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { jsPDF } from 'jspdf';
 import { mockStudents } from '../data';
-import { Student } from '../types';
+import { Student } from '@minamatch/shared';
 import { fetchStudents, toggleSyllabus } from '../api';
 import { useToast } from './Toast';
 import { ShieldCheck, Award, FileText, CheckCircle, Database, ChevronRight, CircleAlert, Download, Check, Search, GraduationCap, TrendingUp, Users, BookOpen, X, Info, Wifi, WifiOff } from 'lucide-react';

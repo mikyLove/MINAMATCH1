@@ -1,4 +1,4 @@
-import { Student } from '../types';
+import { Student } from '@minamatch/shared';
 import { mockStudents } from '../data';
 import { apiFetch, getLocalData, setLocalData, DB_KEYS } from './client';
 

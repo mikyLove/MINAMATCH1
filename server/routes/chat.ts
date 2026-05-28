@@ -3,7 +3,7 @@ import { getDb } from '../db';
 import { authMiddleware } from '../authMiddleware';
 import { AuthRequest } from '../authMiddleware';
 import { createChatModel } from '../services/gemini';
-import { chatMessageSchema } from '../validators';
+import { chatMessageSchema } from '@minamatch/shared';
 
 const router = Router();
 

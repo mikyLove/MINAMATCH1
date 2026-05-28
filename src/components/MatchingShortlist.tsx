@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Candidate } from '../types';
+import { Candidate } from '@minamatch/shared';
 import { fetchCandidates, BASE_URL } from '../api';
 import { mockCandidates } from '../data';
 import { useToast } from './Toast';

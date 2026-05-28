@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { mockCandidates } from '../data';
-import { Candidate } from '../types';
+import { Candidate } from '@minamatch/shared';
 import { Search, Flame, Languages, Check, ArrowRight, UserCheck, PhoneCall, Sparkles, X, Award, FileText, Users2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import FitSocialRadar from '../minatalent/FitSocialRadar';

@@ -10,7 +10,7 @@ export const chatMessageSchema = z.object({
 });
 
 export const syllabusUpdateSchema = z.object({
-  completed: z.boolean({ required_error: 'completed es requerido' }),
+  completed: z.boolean(),
 });
 
 export const candidateSchema = z.object({

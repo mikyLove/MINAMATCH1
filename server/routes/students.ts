@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getDb } from '../db';
-import { syllabusUpdateSchema } from '../validators';
+import { syllabusUpdateSchema } from '@minamatch/shared';
 
 const router = Router();
 

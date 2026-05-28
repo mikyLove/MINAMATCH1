@@ -1,4 +1,4 @@
-import { Candidate, Student, Scenario, VocQuestion, VocProfile } from './types';
+import { Candidate, Student, Scenario, VocQuestion, VocProfile } from '@minamatch/shared';
 
 export const mockCandidates: Candidate[] = [
   {

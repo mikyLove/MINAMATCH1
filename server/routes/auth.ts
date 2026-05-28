@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getDb } from '../db';
 import { getJwtSecret } from '../authMiddleware';
-import { loginSchema } from '../validators';
+import { loginSchema } from '@minamatch/shared';
 
 const router = Router();
 

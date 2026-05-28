@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { mockStudents } from '../data';
-import { Student } from '../types';
+import { Student } from '@minamatch/shared';
 import { fetchStudents } from '../api';
 import { useToast } from './Toast';
 import { GraduationCap, Users, Award, TrendingUp, CheckCircle, BookOpen, DollarSign, Target, ChevronRight, Clock, Wifi, WifiOff, BarChart3, PieChart } from 'lucide-react';

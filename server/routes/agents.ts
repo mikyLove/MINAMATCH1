@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../db';
 import { authMiddleware } from '../authMiddleware';
-import { AI_CONFIG } from '../config';
+import { AI_CONFIG } from '@minamatch/shared';
 import { evaluationModel } from '../services/gemini';
 
 const router = Router();
