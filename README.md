@@ -108,6 +108,31 @@ JWT_SECRET="secreto_para_firmar_tokens"
 CORS_ORIGIN="http://localhost:3000"
 ```
 
+## Notas para V2 (local y Railway)
+
+- Local (desarrollo V2): crear `server/.env.local` o exportar variables antes de arrancar el backend V2:
+
+```env
+DATABASE_PROVIDER=postgres
+DATABASE_URL=postgres://<user>:<pass>@127.0.0.1:5433/minamatch_v2
+JWT_SECRET="secreto_local_v2"
+V2_PORT=3004
+GEMINI_API_KEY="tu_api_key_de_gemini"
+```
+
+- Railway (producción V2): configurar variables en el servicio Railway para la nueva instancia V2. Variables mínimas:
+
+```text
+DATABASE_PROVIDER=postgres
+DATABASE_URL=<railway-postgres-connection-string>
+JWT_SECRET=<secreto_produccion>
+NODE_ENV=production
+VITE_API_URL=https://<tu-dominio>.railway.app
+GEMINI_API_KEY=<opcional_si_usas_gemini>
+```
+
+No sobrescribas la aplicación V1 en Railway hasta confirmar — crea un servicio separado para V2 o una rama de despliegue independiente.
+
 El frontend usa `src/api/client.ts` con `BASE_URL` fijo en `http://localhost:3001`.
 
 ## Comandos de Ejecución

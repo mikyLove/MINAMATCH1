@@ -4,8 +4,15 @@ import jwt from 'jsonwebtoken';
 import { loginSchema } from '@minamatch/shared';
 import { getProvider } from '@minamatch/database';
 import { getJwtSecret, authMiddleware, AuthRequest } from '../../middleware/auth.middleware';
+import { z } from 'zod';
 
 const router: Router = Router();
+
+const registerSchema = z.object({
+  name: z.string().min(2, 'Nombre demasiado corto').max(255),
+  email: z.string().email('Email inválido').max(255),
+  password: z.string().min(6, 'Mínimo 6 caracteres').max(128),
+});
 
 router.post('/login', async (req, res: Response) => {
   try {
@@ -87,6 +94,55 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
     });
   } catch (err) {
     req.log?.error({ err }, 'GET /auth/me error');
+    res.status(503).json({ error: 'Servicio de autenticación no disponible' });
+  }
+});
+
+router.post('/register', async (req, res: Response) => {
+  try {
+    const parsed = registerSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues?.[0]?.message || 'Datos inválidos';
+      return res.status(400).json({ error: msg });
+    }
+
+    const { name, email, password } = parsed.data;
+    const provider = await getProvider();
+    const existing = await provider.users.findByEmail(email);
+    if (existing) {
+      req.log?.warn({ email }, 'Register failed — email exists');
+      return res.status(409).json({ error: 'El email ya está registrado' });
+    }
+
+    const passwordHash = bcrypt.hashSync(password, 10);
+    const id = (globalThis as any).crypto?.randomUUID?.() || String(Date.now());
+
+    const created = await provider.users.create({
+      id,
+      name,
+      email,
+      password: passwordHash,
+      role: 'user',
+    });
+
+    const token = jwt.sign(
+      { id: created.id, email: created.email, name: created.name, role: created.role },
+      getJwtSecret(),
+      { expiresIn: '24h' },
+    );
+
+    res.status(201).json({
+      token,
+      user: {
+        id: created.id,
+        name: created.name,
+        email: created.email,
+        role: created.role,
+        avatar: created.avatar || null,
+      },
+    });
+  } catch (err) {
+    req.log?.error({ err }, 'POST /auth/register error');
     res.status(503).json({ error: 'Servicio de autenticación no disponible' });
   }
 });

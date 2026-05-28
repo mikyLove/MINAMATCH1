@@ -18,11 +18,24 @@
 - `src/`, `server/`, `data/`, `vite.config.ts`, `Dockerfile`, `railway.json`, `index.html`
 
 ### Validación
-- `pnpm install` ✅ — 5 workspaces detectados
-- `pnpm run build` ✅ — Vite build exitoso
-- `pnpm run lint` ⚠️ — 3 errores pre-existentes en `LandingPage.tsx` (V1)
 
 ---
+
+## Fase 5 — Preparar V2 público con registro y PostgreSQL (2026-05-28)
+
+### Añadido
+- `POST /api/v2/auth/register` — endpoint público de registro (valida `name,email,password`, evita emails duplicados, hashea con bcrypt y devuelve `token` + `user`).
+- `src/lib/api/auth.ts`: `v2Register()` — cliente frontend para registro.
+- `src/AuthContext.tsx`: `register()` expuesto para manejar registro y persistencia de `minamatch_token`.
+- `src/components/Login.tsx`: modo `register` en UI (campo `name`, botón `Registrarme`, toggle a login).
+
+### Validación local
+- `curl POST /api/v2/auth/register` → `201` con `{ token, user }` ✅
+- `curl POST /api/v2/auth/login` → `200` con `{ token, user }` ✅
+- `curl GET /api/v2/auth/me` con `Authorization: Bearer <token>` → `200` con perfil ✅
+
+### Notas
+- Mantener V1 en Railway sin cambios. Recomendar crear servicio Railway separado para V2 y configurar variables de entorno.
 
 ## Fase 0B — Documentación de límites (2026-05-27)
 

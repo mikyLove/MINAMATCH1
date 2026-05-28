@@ -7,19 +7,25 @@ interface LoginProps {
 }
 
 export default function Login({ onBack }: LoginProps) {
-  const { login, loginAsGuest } = useAuth();
+  const { login, loginAsGuest, register } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<'login' | 'register'>('login');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      if (mode === 'login') {
+        await login(email, password);
+      } else {
+        await register(name, email, password);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -49,6 +55,18 @@ export default function Login({ onBack }: LoginProps) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {mode === 'register' && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Nombre completo</label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Juan Pérez"
+                  className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-colors"
+                  required
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Correo electrónico</label>
               <input
@@ -98,7 +116,7 @@ export default function Login({ onBack }: LoginProps) {
               ) : (
                 <>
                   <LogIn className="w-4 h-4" />
-                  Ingresar
+                  {mode === 'login' ? 'Ingresar' : 'Registrarme'}
                 </>
               )}
             </button>
@@ -119,6 +137,20 @@ export default function Login({ onBack }: LoginProps) {
               <UserCircle className="w-4 h-4" />
               Ingresar como Invitado
             </button>
+          </div>
+
+          <div className="mt-4 text-center">
+            {mode === 'login' ? (
+              <p className="text-sm text-slate-500">
+                ¿No tienes cuenta?{' '}
+                <button onClick={() => setMode('register')} className="text-amber-600 font-semibold">Crear cuenta</button>
+              </p>
+            ) : (
+              <p className="text-sm text-slate-500">
+                ¿Ya tienes cuenta?{' '}
+                <button onClick={() => setMode('login')} className="text-amber-600 font-semibold">Ingresar</button>
+              </p>
+            )}
           </div>
 
           <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 text-center">

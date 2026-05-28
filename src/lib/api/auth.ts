@@ -17,3 +17,16 @@ export function v2Login(data: V2LoginRequest): Promise<V2LoginResponse> {
 export function v2VerifyToken(): Promise<V2UserProfile> {
   return v2Fetch<V2UserProfile>('/api/v2/auth/me');
 }
+
+export interface V2RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export function v2Register(data: V2RegisterRequest): Promise<V2LoginResponse> {
+  return v2Fetch<V2LoginResponse>('/api/v2/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}

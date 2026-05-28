@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { v2Login, v2VerifyToken } from './lib/api/auth';
+import { v2Login, v2VerifyToken, v2Register } from './lib/api/auth';
 import { V2ApiError } from './lib/api/client';
 import type { V2UserProfile } from './lib/api/types';
 
@@ -15,6 +15,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   loginAsGuest: () => void;
   logout: () => void;
   loading: boolean;
@@ -67,6 +68,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(toUser(data.user));
   };
 
+  const register = async (name: string, email: string, password: string) => {
+    const data = await v2Register({ name, email, password });
+    localStorage.setItem('minamatch_token', data.token);
+    setToken(data.token);
+    setUser(toUser(data.user));
+  };
+
   const loginAsGuest = () => {
     const guestUser: User = {
       id: 'guest-user',
@@ -87,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, loginAsGuest, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, loginAsGuest, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
