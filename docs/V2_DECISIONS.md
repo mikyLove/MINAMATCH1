@@ -57,3 +57,26 @@ Cada decisión registra: contexto, alternativa considerada, decisión tomada y c
 **Decisión**: No tocarlos. Todo el código V2 nuevo va en `packages/`. Estos directorios se eliminarán al final de la migración si quedan vacíos.
 
 **Consecuencia**: Evitamos confusión entre `src-v2/` y `packages/frontend/`.
+
+---
+
+### DEC-006: PostgreSQL como fuente única de verdad para V2 (2026-05-28)
+
+**Contexto**: V2 se construyó inicialmente con una arquitectura híbrida PostgreSQL/SQLite mediante el `DatabaseProvider`. Tras completar las fases 0-3, se decide que mantener dos motores de base de datos para V2 añade complejidad innecesaria sin beneficio real para el despliegue en producción.
+
+**Alternativas consideradas**:
+1. Mantener el híbrido — más código, más tests, más configuraciones que mantener
+2. Eliminar SQLite completamente ahora — riesgo alto, el código híbrido funciona y no estorba
+3. Congelar el híbrido y priorizar PostgreSQL — **seleccionada**
+
+**Decisión**: A partir de ahora, V2 usa **PostgreSQL como única base activa**. SQLite se congela como:
+- Respaldo histórico de V1 (data/minamatch.db)
+- Referencia legacy (tests SQLite se mantienen pero no bloquean)
+- No recibe nuevas features ni optimizaciones
+- No es fallback activo de V2
+
+**Consecuencia**:
+- Nuevas features se prueban solo contra PostgreSQL (tests postgres son la prioridad)
+- Tests SQLite se ejecutan en CI como verificación de que V1 sigue intacto
+- El provider híbrido no se elimina (código funcional que no estorba)
+- Roadmap se simplifica: una base, un schema, un provider

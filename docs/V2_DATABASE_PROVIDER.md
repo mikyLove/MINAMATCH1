@@ -1,10 +1,12 @@
-# MinaMatch V2 — Database Provider (Híbrido PostgreSQL/SQLite)
+# MinaMatch V2 — Database Provider (PostgreSQL como fuente única de verdad)
 
-## Objetivo
+> ⚠️ **Aviso (2026-05-28):** A partir de la Fase 3I, V2 adopta **PostgreSQL como única base activa**. La arquitectura híbrida PostgreSQL/SQLite queda deprecada para V2. SQLite se conserva únicamente como respaldo histórico de V1. Este documento se mantiene como referencia del diseño original.
 
-Permitir que MinaMatch V2 funcione con **PostgreSQL como base principal** y **SQLite como modo offline/demo/fallback**, sin cambiar el código de las rutas Express.
+## Objetivo original
 
-## Estrategia
+Permitir que MinaMatch V2 funcionara con **PostgreSQL como base principal** y **SQLite como modo offline/demo/fallback**, sin cambiar el código de las rutas Express.
+
+## Estrategia (diseño híbrido — legacy para V2)
 
 Una **capa de abstracción** (`DatabaseProvider`) que expone una interfaz común para todos los repositorios. Las rutas Express V2 nunca llaman directamente a Drizzle o better-sqlite3; siempre lo hacen a través del provider.
 
@@ -58,15 +60,20 @@ Si `DATABASE_PROVIDER=postgres` pero PostgreSQL no está disponible (conexión f
 
 En desarrollo, si `DATABASE_PROVIDER` no está definido y `DATABASE_URL` no apunta a un PG disponible, se puede forzar `DATABASE_PROVIDER=sqlite`.
 
-## Modos de operación
+## Modos de operación (V2 actual — PostgreSQL-only)
 
 | Modo | DATABASE_PROVIDER | DATABASE_URL | Uso |
 |------|-------------------|-------------|-----|
-| production | `postgres` | PostgreSQL real | Railway / producción real |
-| development-full | `postgres` | PostgreSQL local | Desarrollo con PG local |
-| development-offline | `sqlite` | — | Desarrollo sin PostgreSQL |
-| demo-local | `sqlite` | — | Demostraciones locales |
-| fallback | `sqlite` | — | Cuando PG no está disponible |
+| production | `postgres` (default) | PostgreSQL real | Railway / producción real |
+| development | `postgres` (default) | PostgreSQL local | Desarrollo con PG local |
+| ~~sqlite~~ | ~~`sqlite`~~ | ~~—~~ | ~~Ya no es fallback activo de V2~~ |
+
+### Legacy: SQLite para V1
+
+SQLite (`data/minamatch.db`) sigue siendo la base de datos de V1. Se conserva para:
+- **Referencia**: el pipeline CI aún ejecuta 41 tests SQLite para verificar que V2 no rompe el formato legacy
+- **Historia**: los datos de V1 se mantienen accesibles
+- **Migración manual**: si se necesita migrar datos de V1 a V2, SQLite es la fuente
 
 ## Archivos creados
 
@@ -87,51 +94,50 @@ En desarrollo, si `DATABASE_PROVIDER` no está definido y `DATABASE_URL` no apun
 | `packages/database/src/repositories/chat.repository.ts` | Implementación PostgreSQL de `IChatRepo` (Drizzle) |
 | `packages/database/src/repositories/scenarios.repository.ts` | Implementación PostgreSQL de `IScenariosRepo` (Drizzle) |
 
-## ¿Por qué mantener SQLite?
+## ¿Por qué mantener SQLite? (a partir de Fase 3I)
 
-1. **Offline local**: desarrolladores pueden trabajar sin PostgreSQL
-2. **Demostraciones rápidas**: zero setup para mostrar la app
-3. **Fallback**: si PostgreSQL se cae, SQLite mantiene la app funcional
-4. **Compatibilidad V1**: el archivo `data/minamatch.db` de V1 se reutiliza
+1. **Compatibilidad V1**: `data/minamatch.db` contiene los datos históricos de V1
+2. **Referencia de migración**: los tests SQLite verifican que el formato no se rompe
+3. **No eliminamos código funcional**: el provider híbrido ya existe y funciona; eliminarlo no aporta valor
 
-## Tests de integración
+SQLite **ya no es**:
+- ❌ Fallback activo de V2
+- ❌ Modo offline para desarrollo V2
+- ❌ Fuente de datos para nuevas features de V2
 
-El provider se valida con dos suites de tests independientes:
+## Tests de integración (V2 actual)
 
-### SQLite (6 tests)
+A partir de Fase 3I, **PostgreSQL es la suite principal**. SQLite se mantiene como verificación legacy.
+
+### PostgreSQL (10 tests — prioritarios)
+```bash
+pnpm --filter @minamatch/backend test:postgres
+```
+- Se ejecutan en CI con service container PostgreSQL 16
+- Verifican la base activa de V2
+- Tests estructurales + valores específicos contra el seed
+- Requieren: PostgreSQL corriendo + `pnpm db:migrate` + `pnpm db:seed`
+
+### SQLite (41 tests — legacy)
 ```bash
 pnpm --filter @minamatch/backend test:sqlite
 ```
-- Tests estructurales contra `data/minamatch.db`
+- Tests contra `data/minamatch.db` (V1 legacy)
 - Sin dependencias externas
-- Verifica: tipos boolean, arrays parseados (languages, skills), nested `culturalFit`, snake_case compat
+- Se mantienen para verificar que V2 no rompe el formato V1
+- **No bloquean** el desarrollo de nuevas features
 
-### PostgreSQL (9 tests, opcionales)
+### Ambos (validación completa)
 ```bash
-DATABASE_URL="postgres://minamatch:minamatch_dev@localhost:5432/minamatch_v2" \
-  pnpm --filter @minamatch/backend test:postgres
-```
-- Tests estructurales + valores específicos contra PostgreSQL
-- Requiere: `docker compose up -d` + `pnpm db:migrate` + `pnpm db:seed`
-- Skip automático si PostgreSQL no está disponible (TCP connect al puerto 5432)
-- Verifica: mismos tipos, booleans, arrays, nested `culturalFit`, y valores exactos del seed
-
-### Ambos
-```bash
-pnpm --filter @minamatch/backend test:all    # 49 tests total (40 SQLite + 9 PostgreSQL)
+pnpm --filter @minamatch/backend test:all    # 51 tests total (41 SQLite + 10 PostgreSQL)
 ```
 
 ### Cobertura completa
 
-| Test file | Tests | Endpoints cubiertos |
-|-----------|-------|---------------------|
-| `simple.routes.test.ts` | 6 | `GET /api/candidates`, `/candidates/:id`, `/students`, `/scenarios`, `/health` (estructural) |
-| `auth.routes.test.ts` | 7 | `POST /api/v2/auth/login` (token, 401, 400), `GET /api/v2/auth/me` (token, guest, sin token, inválido) |
-| `chat.routes.test.ts` | 8 | `POST /api/v2/chat/message` (fallback, prohibidas, cortas, guest), `GET /history`, `DELETE /history` |
-| `agents.routes.test.ts` | 9 | `POST /api/v2/agents/interview` (éxito, 404, 400, 401), `/evaluate-scenario` (éxito, 404, 404), `/matching` (éxito, 400) |
-| `simple.routes.postgres.test.ts` | 9 | PG opcionales: estructural + valores específicos para candidates, students, scenarios |
+| Suite | Tests | Provider | Prioridad |
+|-------|-------|----------|-----------|
+| SQLite (5 test files) | 41 | better-sqlite3 | Legacy |
+| PostgreSQL (1 test file) | 10 | Drizzle + postgres.js | **Alta** |
+| **Total** | **51** | — | — |
 
-## Pendiente
-
-- Estrategia de sincronización entre PostgreSQL y SQLite
-- Logger estructurado (Pino)
+> El comando `pnpm test:all` ejecuta ambas suites secuencialmente.

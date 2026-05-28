@@ -838,3 +838,44 @@ El job espera a que PostgreSQL esté listo, corre migraciones (`pnpm db:migrate`
   - `pnpm run build` ✅
   - `pnpm --filter @minamatch/backend test:sqlite` ✅
   - `pnpm db:migrate && pnpm db:seed && pnpm --filter @minamatch/backend test:postgres` ✅
+
+---
+
+## Fase 3I — PostgreSQL como fuente única de verdad (2026-05-28)
+
+### Decisión estratégica
+
+V2 **abandona la arquitectura híbrida** PostgreSQL/SQLite y adopta **PostgreSQL como única base activa**.
+
+SQLite se congela como respaldo histórico de V1 y referencia legacy. No recibe nuevas features ni optimizaciones. No es fallback activo de V2.
+
+### Documentos actualizados
+
+| Documento | Cambio |
+|-----------|--------|
+| `docs/V2_PLAN.md` | Roadmap reorganizado: Fase 3I añadida, Fase 5 renombrada a "Deploy V2 público", híbrido marcado como deprecado |
+| `docs/V2_DATABASE_PROVIDER.md` | Header con aviso de deprecación, secciones de modos y tests reescritas para reflejar PostgreSQL como prioridad |
+| `docs/V2_DECISIONS.md` | Nueva entrada DEC-006 documentando el cambio estratégico |
+
+### ¿Qué cambia?
+
+| Aspecto | Antes (híbrido) | Ahora (PostgreSQL-only) |
+|---------|----------------|------------------------|
+| Base principal | PostgreSQL | PostgreSQL (única activa) |
+| SQLite | Fallback activo de V2 | Respaldo histórico de V1 |
+| Tests principales | SQLite (40+ tests) | PostgreSQL (10 tests) |
+| Tests secundarios | PostgreSQL (9 tests) | SQLite (41 tests, legacy) |
+| Nuevas features | Debían soportar ambos | Solo PostgreSQL |
+
+### ¿Qué NO cambia?
+
+- SQLite no se elimina — el código y tests SQLite se conservan como referencia
+- El `DatabaseProvider` sigue funcionando (modo SQLite no se rompe)
+- V1 sigue usando SQLite sin cambios
+- Los tests SQLite siguen pasando (41/41)
+
+### Validación
+
+- `npx tsc --noEmit --project packages/backend/tsconfig.json` ✅
+- `pnpm --filter @minamatch/backend test:sqlite` → 41/41 ✅
+- `pnpm --filter @minamatch/backend test:postgres` → 10/10 ✅

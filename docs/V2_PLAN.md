@@ -59,14 +59,14 @@
 - [x] Migrar schema de `server/db.ts` a migraciones Drizzle
 - [x] Crear seed data para desarrollo
 - [x] Migrar consultas a repositorios tipados
-- [x] Arquitectura híbrida PostgreSQL/SQLite (DatabaseProvider)
+- [x] ~~Arquitectura híbrida PostgreSQL/SQLite (DatabaseProvider)~~ — deprecado para V2
 - [x] Interfaces comunes (`ICandidatesRepo`, `IStudentsRepo`, `IUsersRepo`, `IChatRepo`, `IScenariosRepo`)
 - [x] Express V2 conectado al provider (todas las rutas)
 
 ### Fase 3 — backend: Express V2 ✅
 - [x] Nuevo servidor Express en `packages/backend/`
 - [x] API versionada (`/api/v2/...`)
-- [ ] Logger estructurado (Pino) — pendiente
+- [x] Logger estructurado (Pino)
 - [x] Autenticación JWT funcionando
 - [x] Todas las rutas conectadas al DatabaseProvider:
   - `GET /api/candidates`, `/api/candidates/:id`
@@ -75,10 +75,20 @@
   - `POST /api/v2/auth/login`, `GET /api/v2/auth/me`
   - `POST /api/v2/chat/message`, `GET /api/v2/chat/history`, `DELETE /api/v2/chat/history`
   - `POST /api/v2/agents/interview`, `/evaluate-scenario`, `/matching`
-- [x] Modo híbrido PostgreSQL / SQLite según `DATABASE_PROVIDER`
+- [x] Health/Readiness endpoints mejorados (`/api/v2/health`, `/api/v2/ready`)
+- [x] CI/CD con GitHub Actions
+- [x] ~~Modo híbrido PostgreSQL/SQLite~~ — deprecado, V2 usa PostgreSQL exclusivamente
 - [x] Gemini opcional con fallback a respuestas simuladas
-- [x] Tests de integración (40 SQLite + 9 PostgreSQL = 49 tests)
+- [x] Tests de integración (41 SQLite legacy + 10 PostgreSQL = 51 tests)
 - [x] Runtime: tsx
+
+### Fase 3I — PostgreSQL como fuente única de verdad ✅
+- [x] Decisión: V2 migra a PostgreSQL como única base activa
+- [x] SQLite queda como respaldo histórico de V1 solamente
+- [x] Tests PostgreSQL son la prioridad (10 tests)
+- [x] Tests SQLite mantenidos como legacy (41 tests, no bloqueantes)
+- [x] Provider híbrido no recibe nuevas mejoras
+- [x] Documentación actualizada (DB_PROVIDER, DECISIONS, PLAN, CHANGELOG)
 
 ### Fase 4 — frontend: React V2 ❌
 - [ ] Dividir componentes monolíticos en partes más pequeñas
@@ -88,10 +98,12 @@
 - [ ] Estados de carga/error/vacío consistentes
 - [ ] Tests con Vitest + Testing Library + Playwright
 
-### Fase 5 — CI/CD + Deploy ❌
-- [ ] GitHub Actions: lint → typecheck → test → build
-- [ ] Deploy a Railway (o alternativa) con PostgreSQL
-- [ ] Healthchecks mejorados
+### Fase 5 — Deploy V2 público ❌
+- [ ] Preparar entorno Railway con PostgreSQL
+- [ ] Migrar V2 a producción
+- [ ] CI/CD pipeline completo con deploy automático
+- [ ] Healthchecks + monitoreo
+- [ ] Corte final de V1 (una vez V2 estable en producción)
 
 ## Riesgos
 
@@ -103,14 +115,40 @@
 | Conflictos en Railway al deployar V2 | V2 se deploya en entorno separado; Railway V1 no se toca |
 | Cambios en tipos compartidos rompen frontend/backend | Versionar tipos en `@minamatch/shared` y migrar de a uno |
 
+## Cambio estratégico (Fase 3I — 2026-05-28)
+
+A partir de la Fase 3I, V2 **abandona la arquitectura híbrida** PostgreSQL/SQLite y adopta **PostgreSQL como única base activa**. Este cambio responde a:
+
+- **Simplicidad**: una base de datos, un schema, un provider
+- **Rendimiento**: PostgreSQL nativo supera a SQLite en concurrencia y escalabilidad
+- **Producción**: Railway despliega con PostgreSQL, no SQLite
+- **Mantenibilidad**: menos código, menos tests, menos configuraciones
+
+### ¿Qué cambia?
+| Aspecto | Antes (híbrido) | Ahora (PostgreSQL-only) |
+|---------|----------------|------------------------|
+| Base principal | PostgreSQL | PostgreSQL |
+| SQLite | Fallback activo de V2 | Solo respaldo histórico de V1 |
+| Tests principales | SQLite (40 tests) | PostgreSQL (10 tests) |
+| Tests secundarios | PostgreSQL (9 tests) | SQLite (41 tests, legacy) |
+| Provider | Provider híbrido | Provider con PostgreSQL por defecto |
+| Nuevas features | Debían soportar ambos | Solo PostgreSQL |
+
+### ¿Qué NO cambia?
+- SQLite no se elimina — el código y los tests SQLite se conservan como referencia legacy
+- El `DatabaseProvider` sigue funcionando (el modo SQLite no se rompe)
+- V1 sigue usando SQLite sin cambios
+- Los tests SQLite siguen pasando (41/41)
+
 ## Orden recomendado
 
 1. ~~Fase 0A — Infraestructura del monorepo~~
 2. ~~Fase 0B — Documentación de límites~~
 3. ~~Fase 1 (shared) — tipos y validadores~~
 4. ~~Fase 2 (database) — capa de datos~~
-5. ~~Fase 3 (backend) — nuevo backend~~ ← **completada** (F3F: Pino, F3G: Health/Readiness, F3H: CI/CD)
-6. Fase 4 (frontend) — nuevo frontend ← **siguiente**
-7. Fase 5 (CI/CD) — deploy automático ← **pendiente** (CI listo, falta deploy)
+5. ~~Fase 3 (backend) — nuevo backend~~ ← **completada** (incluye F3F: Pino, F3G: Health, F3H: CI/CD)
+6. ~~Fase 3I — PostgreSQL como fuente única de verdad~~ ← **completada**
+7. Fase 4 (frontend) — nuevo frontend V2 ← **siguiente**
+8. Fase 5 (deploy) — deploy V2 público con PostgreSQL ← **pendiente**
 
 Cada fase debe completarse y verificarse con `pnpm run build` y `pnpm run lint` antes de pasar a la siguiente.
