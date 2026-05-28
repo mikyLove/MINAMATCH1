@@ -2,13 +2,15 @@
 
 Plataforma de matching de talento minero para operaciones de gran altitud (+4500 msnm) en Puno, Perú.
 
+**Estado del deploy**: ✅ **En producción — Railway** (`/api/health` OK, `/api/ready` OK, JWT funcional)
+
 ## Arquitectura
 
 Cliente-servidor con React + Vite (frontend) y Express + SQLite (backend). El frontend se comunica con el backend vía REST API. La autenticación usa JWT.
 
 ```
-Browser → React (Vite) → HTTP (localhost:3001) → Express → SQLite
-                                                        → Gemini API
+Browser → React (Vite) → HTTP (localhost:3001 / Railway) → Express → SQLite
+                                                                      → Gemini API
 ```
 
 ## Stack Tecnológico
@@ -22,6 +24,8 @@ Browser → React (Vite) → HTTP (localhost:3001) → Express → SQLite
 | Autenticación| JWT (jsonwebtoken), bcryptjs        |
 | Validación   | Zod 4                               |
 | Seguridad    | Helmet, CORS, express-rate-limit    |
+| PDF          | jsPDF (reportes de resultados)      |
+| Contenedor   | Docker + Railway                    |
 
 ## Estructura de Carpetas
 
@@ -35,9 +39,37 @@ Browser → React (Vite) → HTTP (localhost:3001) → Express → SQLite
 │   │   ├── students.ts           #  fetchStudents, toggleSyllabus
 │   │   └── index.ts              #  Barrel exports
 │   ├── components/               #  Componentes React
-│   ├── data/                     #  Mock data (fallback offline)
-│   ├── types/                    #  TypeScript types
-│   └── App.tsx                   #  Entry point
+│   │   ├── LandingPage.tsx       #  Landing page corporativa
+│   │   ├── Login.tsx             #  Formulario de inicio de sesión
+│   │   ├── Header.tsx            #  Encabezado de la app
+│   │   ├── BottomNav.tsx         #  Navegación inferior tipo tabs
+│   │   ├── Toast.tsx             #  Sistema de notificaciones toast
+│   │   ├── ErrorBoundary.jsx     #  Captura de errores React
+│   │   ├── BuscadorTalento.tsx   #  Buscador de talento minero
+│   │   ├── ChatBot.tsx           #  Chat IA con streaming
+│   │   ├── MatchingShortlist.tsx #  Lista corta de matching
+│   │   ├── SemillerosDashboard.tsx # Dashboard semilleros
+│   │   ├── SemillerosList.tsx    #  Lista de estudiantes
+│   │   └── ScenarioAssessment.tsx # Evaluación de escenarios
+│   ├── minatalent/               #  Suite de tests MinaTalent
+│   │   ├── MinaTalentApp.tsx     #  App principal de tests
+│   │   ├── MinaTalentLanding.tsx #  Landing de la suite
+│   │   ├── BigFiveTest.tsx       #  Test Big Five (personalidad)
+│   │   ├── DiscTest.tsx          #  Test DISC
+│   │   ├── HoganTest.tsx         #  Test Hogan
+│   │   ├── WonderlicTest.tsx     #  Test Wonderlic (cognitivo)
+│   │   ├── IntegridadTest.tsx    #  Test de integridad
+│   │   ├── FitSocialRadar.tsx    #  Radar de ajuste social
+│   │   ├── FitSocialTest.tsx     #  Test de ajuste social
+│   │   ├── ResultDashboard.tsx   #  Dashboard de resultados
+│   │   ├── PdfReport.ts          #  Generación de PDF (jsPDF)
+│   │   ├── questions.ts          #  Banco de preguntas
+│   │   └── scoring.ts            #  Lógica de puntuación
+│   ├── AuthContext.tsx           #  Estado global de autenticación
+│   ├── ThemeContext.tsx          #  Contexto de tema claro/oscuro
+│   ├── types.ts                  #  Interfaces TypeScript
+│   ├── data.ts                   #  Mock data (fallback offline)
+│   └── App.tsx                   #  Entry point principal
 ├── server/                       # Backend Express
 │   ├── routes/                   #  Rutas Express
 │   │   ├── auth.ts               #  POST /api/auth/login, GET /api/auth/me
@@ -49,15 +81,18 @@ Browser → React (Vite) → HTTP (localhost:3001) → Express → SQLite
 │   ├── services/
 │   │   └── gemini.ts             #  Cliente GoogleGenAI compartido, modelos
 │   ├── authMiddleware.ts         #  JWT verification + guest-token support
-│   ├── db.ts                     #  SQLite init + schema
+│   ├── db.ts                     #  SQLite init + schema + seed data
 │   ├── validators.ts             #  Esquemas Zod
 │   ├── errorHandler.ts           #  AppError + middleware Express
 │   ├── config.ts                 #  Constantes (AI_CONFIG)
-│   └── index.ts                  #  Entry point Express
+│   └── index.ts                  #  Entry point Express (incluye health/ready)
 ├── docs/                         # Documentación técnica
 │   ├── ARCHITECTURE.md
 │   ├── API.md
+│   ├── DEPLOY.md
 │   └── SECURITY.md
+├── Dockerfile                    # Build para Railway
+├── railway.json                  # Config Railway (Dockerfile, healthcheck)
 ├── .env.example                  # Variables de entorno
 └── package.json                  # Dependencias unificadas
 ```
@@ -83,6 +118,7 @@ npm run dev          # Frontend + backend simultáneamente (concurrently)
 npm run dev:frontend # Solo frontend (Vite en puerto 3000)
 npm run dev:backend  # Solo backend (Express en puerto 3001)
 npm run build        # Build frontend para producción
+npm start            # Producción: Express sirve API + dist/
 npm run lint         # TypeScript type check (tsc --noEmit)
 ```
 
@@ -103,7 +139,24 @@ npm run lint         # TypeScript type check (tsc --noEmit)
 | GET    | `/api/students`         | No       | Listar estudiantes/semilleros   |
 | PUT    | `/api/students/:id/syllabus/:courseId` | No | Actualizar progreso de curso |
 | GET    | `/api/scenarios`        | No       | Listar escenarios vocacionales  |
-| GET    | `/api/health`           | No       | Health check del servidor       |
+| GET    | `/api/health`           | No       | **Liveness** — estado del servidor, DB, memoria, uptime |
+| GET    | `/api/ready`            | No       | **Readiness** — servicios críticos listos (DB, auth) |
+
+## MinaTalent — Suite de Evaluación Vocacional
+
+La **batería MinaTalent** es un conjunto de 7 pruebas psicotécnicas para evaluar la compatibilidad de candidatos con operaciones mineras de alta montaña:
+
+| Test                     | Mide                              |
+|--------------------------|-----------------------------------|
+| **Big Five**             | Personalidad (5 factores)         |
+| **DISC**                 | Estilo de comportamiento          |
+| **Hogan**                | Riesgos de liderazgo y derailers  |
+| **Wonderlic**            | Capacidad cognitiva y resolución  |
+| **Integridad**           | Ética y confiabilidad             |
+| **Fit Social**           | Compatibilidad cultural minera    |
+| **Escenarios**           | Juicio situacional en minería     |
+
+Cada test genera una puntuación que se consolida en un **dashboard de resultados** y se puede exportar como **PDF** (`jsPDF`).
 
 ## Flujo de Autenticación JWT
 
@@ -134,13 +187,30 @@ npm start       # Arranca Express sirviendo API + frontend build
 
 Para desplegar en Railway, ver [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
+### Verificación del Deploy en Producción
+
+Endpoints de healthcheck funcionando en Railway:
+
+```bash
+# Liveness — servidor vivo
+GET /api/health
+# → { "status": "ok", "services": { "database": "ok", "gemini": "disabled" }, ... }
+
+# Readiness — servicios críticos listos
+GET /api/ready
+# → { "ready": true, "services": { "database": "ok", "auth": "ok", "gemini": "disabled" } }
+```
+
+`gemini: "disabled"` es normal si no se configuró `GEMINI_API_KEY`; el servidor funciona igual con respuestas simuladas.
+
 ## Seguridad Implementada
 
 - **Helmet**: cabeceras HTTP seguras (X-Content-Type-Options, CSP, etc.).
-- **CORS**: restringido a `CORS_ORIGIN` (default `http://localhost:3000`).
+- **CORS**: restringido a `CORS_ORIGIN` (default `http://localhost:3000`; en producción same-origin).
 - **Rate Limiting**: 20 peticiones/15min en `/api/auth`, 30 peticiones/min en `/api/chat`.
 - **JWT_SECRET obligatorio**: si no está definido, el servidor lanza error al arrancar.
 - **Validación Zod**: esquemas tipados para login, chat, syllabus y candidatos.
 - **Limitación de payload**: `express.json({ limit: '10kb' })`.
 - **Error handler centralizado**: `AppError` + middleware que evita leaks de stack traces.
 - **Sin secretos hardcodeados**: todas las claves vienen de variables de entorno.
+- **Guest-token**: modo invitado para PMV sin exposición de JWT real.

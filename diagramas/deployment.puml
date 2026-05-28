@@ -1,0 +1,82 @@
+@startuml
+title <size:18><b>MinaMatch - Diagrama de Despliegue (Railway)</b></size>
+
+skinparam node {
+  BackgroundColor #F0FDF4
+  BorderColor #22C55E
+  RoundCorner 12
+}
+
+skinparam component {
+  BackgroundColor #F8FAFC
+  BorderColor #334155
+  RoundCorner 8
+}
+
+skinparam database {
+  BackgroundColor #EFF6FF
+  BorderColor #3B82F6
+}
+
+skinparam cloud {
+  BackgroundColor #F5F3FF
+  BorderColor #8B5CF6
+}
+
+cloud "Internet\nUsuarios finales" as INTERNET
+
+node "Railway (railway.app)" as RAILWAY {
+
+  node "Docker Container\nnode:20-slim\npython3 + gcc + g++" as DOCKER {
+
+    component "pnpm start\nnpm run build -> npm start\nNODE_ENV=production" as STARTUP
+
+    component "Express Server (Puerto ${PORT})" as SERVER {
+      component "API REST\n/server/routes/\n6 routers Express" as API
+
+      component "Frontend Estatico\n/dist/\nindex.html + CSS + JS" as STATIC
+
+      component "SPA Fallback\nToda ruta no-API\n-> index.html (React Router)" as SPA
+
+      component "Healthcheck\nGET /api/health\nGET /api/ready" as HC
+    }
+
+    database "SQLite\n/data/minamatch.db\nWAL mode\nPersistencia en disco" as SQLITE
+
+    component "Google Gemini\nservices/gemini.ts\nOpcional: sin API key\n-> disabled (simulaciones)" as GEMINI
+  }
+}
+
+node "Variables de Entorno\nRailway Dashboard" as ENV {
+  file "JWT_SECRET\nObligatorio: sin esto\nno arranca" as JWT
+  file "GEMINI_API_KEY\nOpcional: sin key\n-> disabled" as KEY
+  file "PORT\nRailway asigna\nautomaticamente" as PORT
+  file "NODE_ENV\nproduction\n(automatico)" as NODEENV
+}
+
+INTERNET <--> RAILWAY : HTTPS (railway.app domain)
+
+DOCKER --> SQLITE : better-sqlite3 (reads/writes)
+SERVER --> GEMINI : HTTP call (solo si API key)
+ENV --> DOCKER : Inyecta variables
+
+note right of HC
+  railway.json
+  healthcheckPath: "/api/health"
+  healthcheckTimeout: 100
+  restartPolicyType: "ON_FAILURE"
+  Railway reinicia si healthcheck falla
+end note
+
+note left of SERVER
+  Produccion: Same-Origin
+  Frontend y backend comparten
+  el mismo dominio Railway.
+  CORS no es necesario.
+  Express sirve:
+  1. /api/*  -> REST
+  2. /*     -> static dist/
+  3. *      -> index.html (SPA)
+end note
+
+@enduml

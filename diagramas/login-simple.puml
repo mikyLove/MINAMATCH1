@@ -1,0 +1,53 @@
+@startuml
+title <size:16><b>MinaMatch - Login (Version Simplificada)</b></size>
+
+start
+
+:Usuario ingresa email y password;
+
+:Frontend envia peticion
+POST /api/auth/login;
+
+:Backend valida formato
+de los datos ingresados;
+
+if (Datos validos?) then (Si)
+  :Busca usuario en
+  base de datos SQLite;
+
+  if (Usuario existe?) then (Si)
+    :Verifica password
+    con bcrypt;
+
+    if (Password correcta?) then (Si)
+      :Genera token JWT
+      (valido por 24 horas);
+
+      :Responde con token
+      y datos del usuario;
+
+      :Frontend guarda el token
+      en localStorage;
+
+      :Usuario autenticado
+      puede acceder a la app;
+
+      stop
+
+    else (No)
+      :Responde error 401
+      "Credenciales invalidas";
+    endif
+
+  else (No)
+    :Responde error 401
+    "Credenciales invalidas";
+  endif
+
+else (No)
+  :Responde error 400
+  "Datos invalidos";
+endif
+
+stop
+@enduml

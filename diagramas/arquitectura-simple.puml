@@ -1,0 +1,35 @@
+@startuml
+title <size:16><b>MinaMatch - Arquitectura (Version Simplificada)</b></size>
+
+package "Frontend React" as FE {
+  rectangle "App" as APP
+  rectangle "Auth (JWT)" as AUTH
+  rectangle "Vistas\nCandidatos / Estudiantes" as VIEWS
+  rectangle "API Client\nLlamadas al backend" as API
+}
+
+package "Backend Express" as BE {
+  rectangle "Middleware\nSeguridad y validacion" as MID
+  rectangle "Rutas API\n/auth /candidates /students\n/health /ready" as ROUTES
+  rectangle "Auth JWT\nVerificacion de tokens" as JWT
+}
+
+database "SQLite" as DB
+
+rectangle "Google Gemini\n(deshabilitado)" as GEM
+
+node "Railway" as RAIL
+
+FE <--> BE : HTTP / JSON
+
+BE --> DB : Lectura y escritura
+BE --> GEM : Solo si hay API key
+RAIL --> BE : Contenedor Docker
+
+APP --> AUTH : estado
+APP --> VIEWS : renderiza
+APP --> API : llamadas
+VIEWS --> API : fetch data
+API --> BE : HTTP request
+
+@enduml

@@ -1,0 +1,70 @@
+@startuml
+title <size:18><b>MinaMatch - Flujo de APIs y Fallback Offline</b></size>
+
+start
+
+note right
+  ** Componente llama a funcion API **
+  fetchCandidates | fetchStudents | sendMessageStream
+  src/api/*.ts
+end note
+
+:Componente llama a funcion API;
+
+partition "src/api/client.ts" {
+  :Construye headers Auth Bearer;
+  :Construye endpoint BASE_URL + path;
+  :Crea AbortController timeout 8s;
+  :Ejecuta fetch con signal;
+}
+
+if (Servidor responde en menos de 8s?) then (Si)
+  if (Status HTTP 2xx?) then (Si)
+    :Retorna JSON al componente;
+    :Renderiza datos normalmente;
+    stop
+  else (HTTP 4xx/5xx)
+    :Lanza ApiError con status;
+    if (Es 401 y AuthContext detecta?) then (Si)
+      :Limpia localStorage token;
+      :Redirige a Login;
+    else (No)
+      :Muestra error en Toast;
+    endif
+    stop
+  endif
+
+else (No)
+  note right
+    ** MODO OFFLINE **
+    Fallback a localStorage
+    src/api/client.ts:44-55
+  end note
+
+  :Entra en modo offline;
+
+  if (Hay datos en localStorage?) then (Si)
+    :Lee con getLocalData();
+    :Renderiza datos locales;
+    :Muestra Modo offline en UI;
+  else (No)
+    if (Auth fallback disponible?) then (Si)
+      note right
+        ** AuthContext.login() **
+        src/AuthContext.tsx:79-88
+        Usa credenciales hardcodeadas
+        admin@minamatch.pe / admin123
+      end note
+      :Usa credenciales hardcodeadas;
+      :Genera token simulado;
+      :Login offline exitoso;
+    else (Chat sin streaming)
+      :Muestra error: chat no disponible;
+    endif
+  endif
+
+  stop
+endif
+
+stop
+@enduml

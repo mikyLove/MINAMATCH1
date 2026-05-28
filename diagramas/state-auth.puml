@@ -1,0 +1,65 @@
+@startuml
+title <size:18><b>MinaMatch - Estados de Autenticacion JWT</b></size>
+
+skinparam state {
+  BackgroundColor #F8FAFC
+  BorderColor #334155
+  RoundCorner 12
+}
+
+state "UNAUTHENTICATED\nUsuario no autenticado" as UNAUTH
+state "AUTHENTICATED\nUsuario autenticado\n(user, token en localStorage)" as AUTH
+state "GUEST\nInvitado\nToken: guest-token\nRole: guest\nSin JWT real" as GUEST
+state "LOADING\nVerificando token persistido\nApp.tsx:46 -> spinner" as LOADING
+state "TOKEN_EXPIRED\nToken invalido o expirado\nLimpia localStorage\nRedirige a Login" as EXPIRED
+state "OFFLINE_FALLBACK\nLogin offline\nServidor no disponible\nCredenciales hardcodeadas\nToken: local-jwt-simulated" as OFFLINE
+
+[*] --> LOADING : App inicia
+
+LOADING --> AUTH : localStorage tiene token valido\n-> GET /api/auth/me -> 200
+LOADING --> GUEST : localStorage tiene "guest-token"\n-> setUser invitado (sin JWT)
+LOADING --> UNAUTH : localStorage vacio\n-> App.tsx:55 -> LandingPage
+
+UNAUTH --> LOADING : Usuario hace login\n-> AuthContext.login()
+UNAUTH --> GUEST : Click "Entrar como invitado"\n-> AuthContext.loginAsGuest()
+
+AUTH --> EXPIRED : API responde 401\n-> localStorage.removeItem()\n-> setUser(null)
+EXPIRED --> UNAUTH : Redirige a Login (user == null)
+
+AUTH --> UNAUTH : Logout explicito\n-> localStorage.removeItem()
+AUTH --> OFFLINE : Fallback offline\n-> fetch falla, usa credenciales locales
+OFFLINE --> UNAUTH : Logout
+
+GUEST --> AUTH : Hace login real\n-> reemplaza token guest
+
+note right of LOADING
+  src/AuthContext.tsx:28-61
+  useEffect al montar:
+  - Lee localStorage
+  - Si guest-token -> setUser
+  - Si JWT -> GET /api/auth/me
+  - Si falla -> limpia
+  - Si vacio -> no login
+end note
+
+note left of AUTH
+  Flujo exitoso:
+  POST /api/auth/login
+  jwt.sign(payload, JWT_SECRET, {expiresIn: '24h'})
+  HS256
+  Devuelve {token, user}
+  localStorage + setUser
+end note
+
+note left of GUEST
+  Modo invitado:
+  authMiddleware.ts:24
+  if (token === "guest-token") {
+    req.user = { role: "guest", ... }
+    return next()
+  }
+  Util para PMV/demos
+  Sin JWT real
+end note
+
+@enduml

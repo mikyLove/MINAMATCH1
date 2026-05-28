@@ -63,6 +63,29 @@ curl https://minamatch.up.railway.app/api/ready
 curl https://minamatch.up.railway.app/
 ```
 
+### 6. Verificación esperada en producción
+
+```json
+// GET /api/ready
+{ "ready": true, "services": { "database": "ok", "auth": "ok", "gemini": "disabled" } }
+
+// GET /api/health
+{
+  "status": "ok",
+  "timestamp": "2026-05-27T...",
+  "uptime": 12345,
+  "environment": "production",
+  "services": { "database": "ok", "gemini": "disabled" },
+  "memory": { "rssMb": 45, "heapMb": 28 }
+}
+```
+
+Notas sobre la verificación:
+- `gemini: "disabled"` es **normal** si no se configuró `GEMINI_API_KEY`; la app funciona offline con respuestas simuladas.
+- `auth: "ok"` confirma que `JWT_SECRET` está configurado correctamente.
+- `database: "ok"` confirma que SQLite se inicializó y responde queries.
+- El healthcheck en `railway.json` (path `/api/health`) permite a Railway reiniciar el contenedor automáticamente si la app deja de responder.
+
 ## Cómo funciona el despliegue
 
 | Fase                | Comando                      | Qué hace                          |

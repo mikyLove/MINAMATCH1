@@ -31,7 +31,7 @@ app.use(cors({
 }));
 ```
 
-Solo `localhost:3000` puede hacer peticiones. En producción, cambiar `CORS_ORIGIN` al dominio real.
+Solo `localhost:3000` puede hacer peticiones. En producción, el frontend y backend están en el mismo dominio (same-origin), por lo que CORS no es necesario; igualmente se define `CORS_ORIGIN` para compatibilidad.
 
 ### Rate Limiting
 
@@ -66,6 +66,19 @@ export function getJwtSecret(): string {
 - Si `JWT_SECRET` no está definido, el servidor lanza un error al arrancar.
 - No existe fallback inseguro (se eliminó el `'dev-insecure-fallback'` de fases anteriores).
 - Los tokens expiran en 24 horas.
+
+### Guest-Token (Modo Invitado)
+
+El middleware de autenticación soporta un flujo invitado para el PMV: si el header `Authorization` contiene exactamente `"guest-token"`, se asigna un usuario invitado sin verificar JWT. Esto permite explorar la plataforma sin necesidad de login real durante demostraciones.
+
+```ts
+if (token === 'guest-token') {
+  (req as any).user = { id: 'guest', name: 'Invitado', role: 'guest' };
+  return next();
+}
+```
+
+Este modo está diseñado solo para PMV/demos y debe reemplazarse por autenticación completa en producción real.
 
 ### GEMINI_API_KEY por .env
 
@@ -134,9 +147,9 @@ Ningún secreto está commitado en el repositorio. `.gitignore` excluye `.env*`.
 
 ### Alta Prioridad
 
-1. **Rotar API Key de Gemini**: la key actual está en el historial de git (`.env` anterior fue commiteado). Generar una nueva en [Google AI Studio](https://aistudio.google.com/) y actualizar `server/.env`.
+1. **Rotar API Key de Gemini**: si se configuró `GEMINI_API_KEY` en Railway y antes estuvo en el historial de git, generar una nueva en [Google AI Studio](https://aistudio.google.com/) y actualizarla en las variables de entorno de Railway.
 
-2. **HTTPS en producción**: usar un proxy inverso (Nginx, Caddy) o servicio como Cloudflare para TLS. Las cabeceras JWT viajan en texto plano sin HTTPS.
+2. **HTTPS**: Railway provee HTTPS automáticamente en el dominio `*.up.railway.app`. Si se usa dominio personalizado, configurar TLS en Railway o Cloudflare.
 
 3. **Hash de contraseñas**: ya implementado con bcryptjs. Verificar que el costo (`saltRounds`) sea al menos 10.
 

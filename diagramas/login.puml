@@ -1,0 +1,74 @@
+@startuml
+title <size:18><b>MinaMatch - Flujo de Login JWT</b></size>
+
+skinparam activity {
+  BackgroundColor #F8FAFC
+  BorderColor #334155
+}
+
+start
+
+:Usuario ingresa email y contrasena;
+
+:Frontend llama a AuthContext.login()
+src/AuthContext.tsx:63;
+
+:Construye peticion
+POST /api/auth/login
+Content-Type: application/json
+{ email, password };
+
+:Express recibe peticion
+server/index.ts:55
+-> helmet, CORS, rate limiter;
+
+:Router auth procesa
+server/routes/auth.ts
+-> aplica loginSchema (Zod)
+server/validators.ts:3;
+
+if (Validacion Zod: email valido y password 6-128 chars?) then (Si)
+  :Busca usuario en SQLite
+  server/db.ts
+  SELECT * FROM users WHERE email = ?;
+
+  if (Usuario existe?) then (Si)
+    :Compara password con bcrypt.compare();
+
+    if (Coinciden?) then (Si)
+      :Genera JWT con jwt.sign()
+      server/authMiddleware.ts:35
+      payload: id, email, name, role
+      exp: 24h, HS256;
+
+      :Responde 200 OK
+      { token: "eyJ...", user: { ... } };
+
+      :Frontend guarda en
+      localStorage("minamatch_token")
+      setUser(data.user)
+      setToken(data.token);
+
+      :Redirige a la plataforma
+      App.tsx:54 (user != null);
+
+      stop
+
+    else (No)
+      :Responde 401
+      { error: "Credenciales invalidas" };
+    endif
+
+  else (No)
+    :Responde 401
+    { error: "Credenciales invalidas" };
+  endif
+
+else (No)
+  :Responde 400
+  { error: "Email invalido"
+    | "Password: Minimo 6 caracteres" };
+endif
+
+stop
+@enduml

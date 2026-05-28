@@ -1,0 +1,52 @@
+@startuml
+title <size:16><b>MinaMatch - Estados de Autenticacion (Version Simplificada)</b></size>
+
+state "NO AUTENTICADO\nUsuario sin sesion" as NO_AUTH
+
+state "AUTENTICADO\nUsuario con JWT valido\nToken en localStorage" as AUTH
+
+state "INVITADO\nModo guest\nToken especial\nSin registro" as GUEST
+
+state "CARGANDO\nVerificando si hay\nsesion guardada" as LOADING
+
+state "TOKEN_EXPIRADO\nToken invalido\nSe limpia sesion" as EXPIRED
+
+[*] --> LOADING : App inicia
+
+LOADING --> AUTH : Token valido encontrado
+LOADING --> GUEST : Token de invitado encontrado
+LOADING --> NO_AUTH : No hay sesion guardada
+
+NO_AUTH --> LOADING : Usuario hace login
+NO_AUTH --> GUEST : Entrar como invitado
+
+AUTH --> EXPIRED : Token expira o es invalido
+EXPIRED --> NO_AUTH : Se redirige al login
+
+AUTH --> NO_AUTH : Cerrar sesion
+GUEST --> AUTH : Hacer login real
+
+note right of LOADING
+  Al iniciar la app:
+  - Revisa localStorage
+  - Si hay token -> valida
+  - Si es guest -> modo invitado
+  - Si no hay -> mostrar landing
+end note
+
+note left of AUTH
+  Flujo normal:
+  Login con email + password
+  Backend genera JWT
+  Frontend lo guarda y lo usa
+  en cada peticion
+end note
+
+note left of GUEST
+  Modo invitado:
+  No necesita registro
+  Acceso limitado a la app
+  Util para demos y PMV
+end note
+
+@enduml

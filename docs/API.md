@@ -1,6 +1,7 @@
 # API de MinaMatch Puno
 
-Base URL: `http://localhost:3001`
+Base URL (desarrollo): `http://localhost:3001`
+Base URL (producción): `https://minamatch.up.railway.app`
 
 ## Autenticación
 
@@ -347,14 +348,14 @@ Auth: No requerida
 Notas:
 - `services.gemini` retorna `"ok"` si hay API key configurada, `"disabled"` si no.
 - `uptime` en segundos desde que arrancó el servidor.
-- `environment` se lee de `NODE_ENV`, default `"development"`.
+- `environment` se lee de `NODE_ENV`, default `"development"`; en Railway es `"production"`.
 - `version` se lee del `package.json` del proyecto.
 - `memory` muestra RSS y heap usados en MB (información básica, no expone secretos).
 ```
 
 ### `GET /api/ready`
 
-Healthcheck de **readiness**: indica que el servidor está listo para recibir tráfico real. Verifica SQLite, `JWT_SECRET` configurado, y reporta Gemini.
+Healthcheck de **readiness**: indica que el servidor está listo para recibir tráfico real. Verifica SQLite, `JWT_SECRET` configurado, y reporta Gemini. Este endpoint se usa en Railway para determinar si el contenedor puede recibir tráfico.
 
 ```
 Response 200:
@@ -373,7 +374,7 @@ Response 503 (servicio crítico no disponible):
 Auth: No requerida
 
 Notas:
-- Servicios críticos: database, auth. Si alguno falla → 503.
+- Servicios críticos: database, auth. Si alguno falla → 503 (Railway corta el tráfico al contenedor).
 - Gemini es informativo; si falta API key retorna `"disabled"` sin bloquear.
 - No expone secretos: solo dice si auth está disponible o no.
 ```

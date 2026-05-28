@@ -1,0 +1,38 @@
+@startuml
+title <size:16><b>MinaMatch - Secuencia de Login (Version Simplificada)</b></size>
+
+actor Usuario as USER
+participant Frontend as FE
+participant Backend as BE
+participant BaseDeDatos as DB
+
+== Login exitoso ==
+
+USER -> FE: Ingresa email y password
+FE -> BE: POST /api/auth/login
+BE -> BE: Valida datos y busca usuario
+BE -> DB: Consulta credenciales
+DB --> BE: Datos del usuario
+BE -> BE: Verifica password con bcrypt
+BE -> BE: Genera token JWT
+BE --> FE: 200 OK (token + usuario)
+FE -> FE: Guarda token en localStorage
+FE --> USER: Acceso concedido a la app
+
+== Login fallido ==
+
+USER -> FE: Ingresa credenciales incorrectas
+FE -> BE: POST /api/auth/login
+BE -> DB: Consulta credenciales
+DB --> BE: Usuario no existe
+BE --> FE: 401 Credenciales invalidas
+FE --> USER: Muestra error
+
+== Login como invitado ==
+
+USER -> FE: Click "Entrar como invitado"
+FE -> FE: Crea token guest
+FE -> FE: Guarda "guest-token" en localStorage
+FE --> USER: Acceso como invitado
+
+@enduml

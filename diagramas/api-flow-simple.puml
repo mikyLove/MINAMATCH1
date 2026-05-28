@@ -1,0 +1,46 @@
+@startuml
+title <size:16><b>MinaMatch - Flujo de API (Version Simplificada)</b></size>
+
+start
+
+:Componente llama
+a una funcion API;
+
+:Frontend arma la peticion
+con token JWT en header;
+
+:Envia HTTP request
+al backend;
+
+if (Backend responde?) then (Si)
+  if (Respuesta exitosa?) then (Si)
+    :Procesa JSON
+    y renderiza datos;
+    stop
+  else (Error del servidor)
+    if (Error 401
+    token invalido?) then (Si)
+      :Redirige a
+      pantalla de Login;
+    else (Otro error)
+      :Muestra mensaje
+      de error al usuario;
+    endif
+    stop
+  endif
+
+else (No)
+  note right: MODO OFFLINE\nUsa datos guardados\nen localStorage
+  if (Hay datos
+  guardados?) then (Si)
+    :Muestra datos locales
+    con indicador offline;
+  else (Sin conexion)
+    :Muestra error
+    "Sin conexion";
+  endif
+  stop
+endif
+
+stop
+@enduml

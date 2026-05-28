@@ -1,0 +1,111 @@
+@startuml
+title <size:18><b>MinaMatch - Secuencia Temporal de Login</b></size>
+
+skinparam participant {
+  BackgroundColor #F8FAFC
+  BorderColor #334155
+  RoundCorner 8
+}
+
+actor "Usuario" as USER
+participant "LandingPage\nsrc/components/LandingPage.tsx" as LANDING
+participant "Login\nsrc/components/Login.tsx" as LOGIN
+participant "AuthContext\nsrc/AuthContext.tsx" as AUTHCTX
+participant "apiFetch\nsrc/api/client.ts" as APIFETCH
+participant "Express\nserver/index.ts" as EXPRESS
+participant "authRoutes\nserver/routes/auth.ts" as AUTHROUTE
+participant "SQLite\nserver/db.ts" as DB
+
+== Inicio: Usuario no autenticado ==
+
+USER -> LANDING: Accede a la app
+LANDING -> LANDING: App.tsx:54 user == null
+LANDING -> LOGIN: Click "Explorar Plataforma"
+
+== Login con credenciales ==
+
+USER -> LOGIN: Ingresa email + password
+LOGIN -> AUTHCTX: login(email, password)
+activate AUTHCTX
+
+  AUTHCTX -> APIFETCH: POST /api/auth/login {email, password}
+  activate APIFETCH
+
+    APIFETCH -> EXPRESS: HTTP Request (JSON)
+    activate EXPRESS
+
+      note right: Middleware: helmet -> cors -> json -> rate limiter
+
+      EXPRESS -> AUTHROUTE: Pasa a ruta /api/auth/login
+      activate AUTHROUTE
+
+        AUTHROUTE -> AUTHROUTE: Valida con Zod (loginSchema)
+
+        AUTHROUTE -> DB: SELECT * FROM users WHERE email = ?
+        activate DB
+
+          DB --> AUTHROUTE: User row (con hash bcrypt)
+
+        deactivate DB
+
+        AUTHROUTE -> AUTHROUTE: bcrypt.compare(password, hash)
+
+        alt Credenciales correctas
+          AUTHROUTE -> AUTHROUTE: jwt.sign(payload, JWT_SECRET, {expiresIn: '24h'})
+          AUTHROUTE --> EXPRESS: 200 {token, user}
+        else Credenciales incorrectas
+          AUTHROUTE --> EXPRESS: 401 {error: "Credenciales invalidas"}
+        end
+
+      deactivate AUTHROUTE
+
+      EXPRESS --> APIFETCH: HTTP Response
+
+    deactivate EXPRESS
+
+    alt Success (200)
+      APIFETCH --> AUTHCTX: {token, user}
+      AUTHCTX -> AUTHCTX: localStorage.setItem("minamatch_token", token)
+      AUTHCTX -> AUTHCTX: setUser(data.user), setToken(data.token)
+    else Error (4xx)
+      APIFETCH --> AUTHCTX: ApiError
+      note right: Fallback offline src/AuthContext.tsx:79\nSolo admin@minamatch.pe / admin123
+      AUTHCTX -> AUTHCTX: login offline con credenciales hardcodeadas
+    end
+
+  deactivate APIFETCH
+
+  AUTHCTX --> LOGIN: Login completado
+
+deactivate AUTHCTX
+
+alt Login exitoso
+  LOGIN --> USER: Redirige a plataforma
+  USER -> APP: user != null -> renderiza app
+else Login fallo
+  LOGIN --> USER: Muestra error "Credenciales invalidas"
+end
+
+== Login como Invitado ==
+
+USER -> LOGIN: Click "Entrar como invitado"
+LOGIN -> AUTHCTX: loginAsGuest()
+activate AUTHCTX
+
+  AUTHCTX -> AUTHCTX: localStorage.setItem("minamatch_token", "guest-token")
+  AUTHCTX -> AUTHCTX: setUser({ id: "guest-user", role: "guest" })
+
+  note right
+    authMiddleware.ts:24
+    token === "guest-token"
+    -> req.user = { role: "guest" }
+    -> next() sin JWT verify
+  end note
+
+deactivate AUTHCTX
+
+== Autenticado ==
+
+USER -> APP: Navega con Authorization: Bearer <token>
+
+@enduml

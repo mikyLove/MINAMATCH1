@@ -1,0 +1,84 @@
+@startuml
+title <size:18><b>MinaMatch - Arquitectura Cliente-Servidor</b></size>
+
+skinparam rectangle {
+  BackgroundColor #F8FAFC
+  BorderColor #334155
+  RoundCorner 8
+}
+
+skinparam database {
+  BackgroundColor #EFF6FF
+  BorderColor #3B82F6
+}
+
+' ===== CAPA FRONTEND =====
+package "Frontend: React 19 + Vite + TypeScript" as FE {
+
+  rectangle "App.tsx\nPunto de entrada\nRouter principal" as APP
+
+  rectangle "AuthContext.tsx\nEstado de autenticacion\nlogin / loginAsGuest / logout" as AUTHCTX
+
+  rectangle "ThemeContext.tsx\nTema claro/oscuro" as THEME
+
+  rectangle "Componentes UI\nLandingPage / Header / BottomNav\nLogin / Toast / ErrorBoundary" as COMP
+
+  rectangle "MinaTalent Suite\nBigFive / DISC / Hogan\nWonderlic / Integridad / FitSocial\nResultDashboard / PdfReport" as MINAT
+
+  rectangle "Capa API\nclient.ts (apiFetch, timeout 8s)\nauth.ts / candidates.ts\nchat.ts / students.ts" as API
+}
+
+' ===== CAPA BACKEND =====
+package "Backend: Express 4 + TypeScript (tsx)" as BE {
+
+  rectangle "Middleware Global\nhelmet / cors / json 10kb\nrateLimit auth(20/15m) chat(30/1m)" as MID
+
+  rectangle "Routes\nserver/routes/" as ROUTES {
+    rectangle "auth.ts\nPOST /api/auth/login\nGET /api/auth/me" as AUTH
+    rectangle "chat.ts\nPOST /api/chat (stream)\nGET /api/chat/history\nDEL /api/chat/history" as CHAT
+    rectangle "agents.ts\n/interview /evaluate-scenario\n/matching" as AGENTS
+    rectangle "candidates.ts\nGET /api/candidates\nGET /api/candidates/:id" as CAND
+    rectangle "students.ts\nGET /api/students\nPUT /api/students/:id/syllabus/:courseId" as STU
+    rectangle "scenarios.ts\nGET /api/scenarios" as SCEN
+  }
+
+  rectangle "Validacion (Zod)\nvalidators.ts\nloginSchema / chatMessageSchema\nsyllabusUpdateSchema\ncandidateSchema" as ZOD
+
+  rectangle "Error Handler\nerrorHandler.ts\nAppError class\nCaptura centralizada" as ERR
+
+  rectangle "Auth Middleware\nauthMiddleware.ts\nJWT verify + guest-token\ngetJwtSecret()" as AUTHMID
+
+  rectangle "Health & Readiness\nGET /api/health (liveness)\nGET /api/ready (readiness)" as HEALTH
+}
+
+database "SQLite\ndata/minamatch.db\nbetter-sqlite3 WAL" as DB {
+  rectangle "Tablas\nusers / candidates\ncandidate_interviews\nstudents / student_syllabus\nscenarios / scenario_options\nchat_messages" as DBTAB
+}
+
+rectangle "Google Gemini\nservices/gemini.ts\ngemini-2.0-flash (temp 0.2 / 0.4)\nSin API key => disabled\nrespuestas simuladas" as GEMINI
+
+node "Railway\nDocker node:20-slim\npnpm / healthcheck" as RAIL
+
+' Conexiones
+FE <-down-> BE : HTTP REST / JSON / Streaming\nJWT Bearer / Timeout 8s
+
+BE --> DB : SELECT / INSERT\nUPDATE / DELETE
+BE --> GEMINI : API call (si hay key)
+RAIL --> BE : Contenedor Docker
+
+APP --> COMP : renderiza
+APP --> AUTHCTX : consume
+APP --> THEME : consume
+APP --> MINAT : renderiza
+APP --> API : usa
+
+AUTHCTX --> API : login / verifyToken
+COMP --> API : llamadas fetch
+
+MID --> ROUTES
+ROUTES --> ZOD : valida input
+ROUTES --> AUTHMID : protege rutas
+ROUTES --> ERR : captura errores
+BE --> HEALTH : inline en index.ts
+
+@enduml

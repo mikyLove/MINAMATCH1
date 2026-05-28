@@ -1,0 +1,40 @@
+@startuml
+title <size:16><b>MinaMatch - Despliegue (Version Simplificada)</b></size>
+
+cloud "Internet\nUsuarios" as NET
+
+node "Railway" as RAIL {
+
+  node "Docker Container\nNode.js" as DOCKER {
+
+    component "Aplicacion Express\nFrontend + Backend" as APP {
+      component "API REST\n/auth /candidates\n/students /health" as API
+      component "Frontend\nReact compilado" as FE
+    }
+
+    database "SQLite\nBase de datos local" as DB
+
+    component "Gemini IA\n(deshabilitado)" as GEM
+  }
+}
+
+node "Variables de Entorno" as ENV {
+  file "JWT_SECRET" as JWT
+  file "GEMINI_API_KEY" as KEY
+  file "PORT" as PORT
+}
+
+NET <--> RAIL : HTTPS
+
+APP --> DB : Lectura y escritura
+APP --> GEM : Solo si hay API key
+ENV --> DOCKER : Configuracion
+
+note right of APP
+  Express sirve:
+  - /api/* -> REST
+  - /* -> Frontend estatico
+  - * -> index.html (SPA)
+end note
+
+@enduml
