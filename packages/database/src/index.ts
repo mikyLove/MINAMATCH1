@@ -5,3 +5,7 @@ export * as candidatesRepo from './repositories/candidates.repository';
 export * as studentsRepo from './repositories/students.repository';
 export * as chatRepo from './repositories/chat.repository';
 export * as usersRepo from './repositories/users.repository';
+
+// Database Provider (híbrido PostgreSQL / SQLite)
+export * from './provider.types';
+export { getProvider, createProvider, resetProvider } from './provider';

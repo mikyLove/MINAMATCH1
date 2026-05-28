@@ -54,32 +54,36 @@
 - Migrar constantes de `server/config.ts` a `packages/shared/src/`
 - Los packages V1 importarán desde `@minamatch/shared`
 
-### Fase 2 — database: capa de datos
-- Configurar Drizzle ORM + PostgreSQL
-- Migrar schema de `server/db.ts` a migraciones Drizzle
-- Crear seed data para desarrollo
-- Migrar consultas a repositorios tipados
+### Fase 2 — database: capa de datos ✅
+- [x] Configurar Drizzle ORM + PostgreSQL
+- [x] Migrar schema de `server/db.ts` a migraciones Drizzle
+- [x] Crear seed data para desarrollo
+- [x] Migrar consultas a repositorios tipados
+- [x] Arquitectura híbrida PostgreSQL/SQLite (DatabaseProvider)
+- [x] Interfaces comunes (`ICandidatesRepo`, `IStudentsRepo`, `IUsersRepo`, `IChatRepo`)
+- [ ] Conectar Express V2 al provider (pendiente)
 
-### Fase 3 — backend: Express V2
-- Nuevo servidor Express en `packages/backend/`
-- API versionada (`/api/v2/...`)
-- Logger estructurado (Pino)
-- Autenticación JWT con refresh tokens
-- Tests de integración con Vitest + Supertest
-- Runtime: tsx
+### Fase 3 — backend: Express V2 ⏳
+- [ ] Nuevo servidor Express en `packages/backend/` (✅ parcial: rutas creadas)
+- [ ] API versionada (`/api/v2/...`) (✅ parcial: endpoints implementados)
+- [ ] Logger estructurado (Pino)
+- [ ] Autenticación JWT con refresh tokens (✅ login/me funcionando)
+- [ ] Conectar rutas V2 al DatabaseProvider
+- [ ] Tests de integración con Vitest + Supertest
+- [ ] Runtime: tsx
 
-### Fase 4 — frontend: React V2
-- Dividir componentes monolíticos en partes más pequeñas
-- Sistema de diseño con componentes base atómicos
-- React Router en lugar de tabs manuales
-- TanStack Query para data fetching
-- Estados de carga/error/vacío consistentes
-- Tests con Vitest + Testing Library + Playwright
+### Fase 4 — frontend: React V2 ❌
+- [ ] Dividir componentes monolíticos en partes más pequeñas
+- [ ] Sistema de diseño con componentes base atómicos
+- [ ] React Router en lugar de tabs manuales
+- [ ] TanStack Query para data fetching
+- [ ] Estados de carga/error/vacío consistentes
+- [ ] Tests con Vitest + Testing Library + Playwright
 
-### Fase 5 — CI/CD + Deploy
-- GitHub Actions: lint → typecheck → test → build
-- Deploy a Railway (o alternativa) con PostgreSQL
-- Healthchecks mejorados
+### Fase 5 — CI/CD + Deploy ❌
+- [ ] GitHub Actions: lint → typecheck → test → build
+- [ ] Deploy a Railway (o alternativa) con PostgreSQL
+- [ ] Healthchecks mejorados
 
 ## Riesgos
 
@@ -95,9 +99,9 @@
 
 1. ~~Fase 0A — Infraestructura del monorepo~~
 2. ~~Fase 0B — Documentación de límites~~
-3. Fase 1 (shared) — tipos y validadores ← **siguiente**
-4. Fase 2 (database) — capa de datos
-5. Fase 3 (backend) — nuevo backend
+3. ~~Fase 1 (shared) — tipos y validadores~~
+4. ~~Fase 2 (database) — capa de datos~~ ← **completada**
+5. Fase 3 (backend) — nuevo backend ← **siguiente**
 6. Fase 4 (frontend) — nuevo frontend
 7. Fase 5 (CI/CD) — integrar y deployar
 

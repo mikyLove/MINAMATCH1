@@ -330,4 +330,62 @@ V1 (src/, server/) ya no depende de archivos locales de tipos/validadores/config
 - `TypeScript type-check` ✅ — 0 errores
 - `curl /api/v2/health` ✅ — servidor V2 arranca y responde
 - `curl /api/v2/chat/message` ⏳ — requiere PostgreSQL funcionando
-- `curl /api/v2/agents/interview` ⏳ — requiere PostgreSQL funcionando`
+- `curl /api/v2/agents/interview` ⏳ — requiere PostgreSQL funcionando
+
+---
+
+## Fase 2C-5 — Arquitectura Enterprise/Offline Híbrida (2026-05-27)
+
+### Añadido
+- `docs/V2_DATABASE_PROVIDER.md` — documento de estrategia híbrida PostgreSQL/SQLite
+- `packages/database/src/provider.types.ts` — interfaces comunes: `ICandidatesRepo`, `IStudentsRepo`, `IUsersRepo`, `IChatRepo`, `DatabaseProvider`
+- `packages/database/src/provider.ts` — factory asíncrona `createProvider()` + singleton `getProvider()` + `resetProvider()`
+- `packages/database/src/sqlite/client.ts` — cliente SQLite que reusa `data/minamatch.db` de V1
+- `packages/database/src/sqlite/candidates.repository.ts` — implementación SQLite de `ICandidatesRepo`
+- `packages/database/src/sqlite/students.repository.ts` — implementación SQLite de `IStudentsRepo`
+- `packages/database/src/sqlite/users.repository.ts` — implementación SQLite de `IUsersRepo`
+- `packages/database/src/sqlite/chat.repository.ts` — implementación SQLite de `IChatRepo`
+- `packages/database/src/sqlite/index.ts` — barrel export de SQLite repos
+
+### Modificado
+- `packages/database/src/index.ts` — exporta `getProvider`, `createProvider`, `resetProvider` y tipos del provider
+- `.env.example` — añadido `DATABASE_PROVIDER` con valores `postgres`/`sqlite`
+- `package.json` (raíz) — añadido `@types/better-sqlite3` como devDependency
+- `docs/V2_PLAN.md` — actualizado con Fase 2C-5 (ver abajo)
+
+### Modos de operación
+
+| Modo | `DATABASE_PROVIDER` | `DATABASE_URL` | Comportamiento |
+|------|-------------------|----------------|----------------|
+| production | `postgres` | PostgreSQL real | Drizzle ORM |
+| development-full | `postgres` | PostgreSQL local | Drizzle ORM |
+| development-offline | `sqlite` | — | better-sqlite3 |
+| demo-local | `sqlite` | — | better-sqlite3 |
+| auto-detect | *(sin definir)* | `postgres://...` | Drizzle ORM |
+| auto-fallback | *(sin definir)* | *(sin definir)* | SQLite |
+
+### Decisiones técnicas
+- `createProvider()` es asíncrona → permite `import()` dinámico de drivers (evita cargar Drizzle si se usa SQLite)
+- `getProvider()` es singleton (cachea el provider tras la primera llamada)
+- `resetProvider()` permite forzar recreación (útil en tests y cambio de entorno)
+- Las interfaces en `provider.types.ts` son planas (sin dependencia de Drizzle o better-sqlite3)
+- SQLite reusa `data/minamatch.db` de V1 (sin duplicación de seed data)
+- Los repositorios PostgreSQL existentes NO se modificaron
+
+### No tocado
+- `server/db.ts` — V1 SQLite intacto ✅
+- `server/routes/*` — V1 Express intacto ✅
+- `src/` — frontend V1 intacto ✅
+- `data/minamatch.db` — datos V1 intactos ✅
+- Express V2 (`packages/backend/src/routes/v2/`) — sin cambios en rutas ✅
+
+### Pendiente para siguiente fase
+- Conectar Express V2 al provider (`getProvider().candidates.findAll()` en lugar de `candidatesRepo.findAll()`)
+- Soporte `DATABASE_PROVIDER=sqlite` en el seed
+- Estrategia de sincronización bidireccional PostgreSQL ↔ SQLite
+
+### Validación
+- `pnpm install` ✅
+- `pnpm run build` ✅ (Vite build exitoso)
+- `pnpm run lint` ✅ (tsc --noEmit, 0 errores)
+- V1 sin cambios — git status confirma solo archivos nuevos o migrados`
