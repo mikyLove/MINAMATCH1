@@ -18,5 +18,5 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm run build
 
-EXPOSE 3001
+EXPOSE 8080
 CMD ["pnpm", "start"]
