@@ -8,7 +8,7 @@
     "dev:frontend": "vite --port=3000 --host=0.0.0.0",
     "dev:backend": "tsx server/index.ts",
     "build": "vite build",
-    "start": "NODE_ENV=production tsx server/index.ts",
+    "start": "NODE_ENV=production pnpm --filter @minamatch/backend exec tsx src/index.ts",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
@@ -16,7 +16,10 @@
     "db:migrate": "drizzle-kit migrate --config packages/database/drizzle.config.ts",
     "db:push": "drizzle-kit push --config packages/database/drizzle.config.ts",
     "db:seed": "tsx packages/database/src/seed.ts",
-    "db:studio": "drizzle-kit studio --config packages/database/drizzle.config.ts"
+    "db:studio": "drizzle-kit studio --config packages/database/drizzle.config.ts",
+    "dev:backend:v1": "tsx server/index.ts",
+    "start:v1": "NODE_ENV=production tsx server/index.ts",
+    "start:v2": "NODE_ENV=production pnpm --filter @minamatch/backend exec tsx src/index.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

@@ -110,14 +110,26 @@ CORS_ORIGIN="http://localhost:3000"
 
 ## Notas para V2 (local y Railway)
 
-- Local (desarrollo V2): crear `server/.env.local` o exportar variables antes de arrancar el backend V2:
+- Local (desarrollo V2): crear `.env` en la raíz del repo (recomendado) o exportar variables antes de arrancar el backend V2. El backend V2 lee `.env` de raíz y luego `server/.env` si existe:
 
 ```env
 DATABASE_PROVIDER=postgres
-DATABASE_URL=postgres://<user>:<pass>@127.0.0.1:5433/minamatch_v2
+DATABASE_URL=postgres://minamatch:minamatch_dev@localhost:5432/minamatch_v2
 JWT_SECRET="secreto_local_v2"
 V2_PORT=3004
+LOG_LEVEL=debug
+VITE_API_URL=http://localhost:3004
 GEMINI_API_KEY="tu_api_key_de_gemini"
+```
+
+- Flujo local V2 recomendado:
+
+```bash
+docker compose up -d
+pnpm run db:push
+pnpm run db:seed
+pnpm --filter @minamatch/backend exec tsx src/index.ts
+pnpm run dev:frontend
 ```
 
 - Railway (producción V2): configurar variables en el servicio Railway para la nueva instancia V2. Variables mínimas:
@@ -127,13 +139,18 @@ DATABASE_PROVIDER=postgres
 DATABASE_URL=<railway-postgres-connection-string>
 JWT_SECRET=<secreto_produccion>
 NODE_ENV=production
-VITE_API_URL=https://<tu-dominio>.railway.app
+LOG_LEVEL=info
 GEMINI_API_KEY=<opcional_si_usas_gemini>
+VITE_API_URL=<solo_si_frontend_y_backend_viven_en_dominios_distintos>
 ```
 
 No sobrescribas la aplicación V1 en Railway hasta confirmar — crea un servicio separado para V2 o una rama de despliegue independiente.
 
-El frontend usa `src/api/client.ts` con `BASE_URL` fijo en `http://localhost:3001`.
+El frontend V2 usa `src/lib/api/client.ts`: en desarrollo apunta por defecto a `http://localhost:3004`, y en producción usa same-origin salvo que `VITE_API_URL` esté definido. Algunas pantallas legacy aún pueden usar `src/api/client.ts` contra V1 mientras termina la migración.
+
+Bitácora completa del proceso V2: [`docs/V2_PROCESS.md`](docs/V2_PROCESS.md).
+
+Documentación oficial del sistema: [`docs/DOCUMENTACION_OFICIAL.md`](docs/DOCUMENTACION_OFICIAL.md).
 
 ## Comandos de Ejecución
 

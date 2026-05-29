@@ -10,7 +10,7 @@ dotenv.config({ path: path.join(__dirname, '..', '..', '..', '.env') });
 dotenv.config({ path: path.join(__dirname, '..', '..', '..', 'server', '.env'), override: true });
 
 const { app } = await import('./app');
-const PORT = process.env.V2_PORT || 3004;
+const PORT = process.env.PORT || process.env.V2_PORT || 3004;
 
 app.listen(PORT, () => {
   const providerKind = process.env.DATABASE_PROVIDER || 'auto';
@@ -33,6 +33,7 @@ app.listen(PORT, () => {
   logger.info('  GET /api/v2/ready');
   logger.info('  POST /api/v2/auth/login');
   logger.info('  GET /api/v2/auth/me');
+  logger.info('  POST /api/v2/auth/register');
   logger.info('  POST /api/v2/chat/message');
   logger.info('  GET /api/v2/chat/history');
   logger.info('  DELETE /api/v2/chat/history');

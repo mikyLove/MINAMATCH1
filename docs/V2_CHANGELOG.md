@@ -1,5 +1,58 @@
 # MinaMatch V2 — Changelog
 
+## Fase 5F — Documentación oficial técnica del sistema (2026-05-29)
+
+### Documentación
+- Se agregó `docs/DOCUMENTACION_OFICIAL.md` con redacción técnica formal para copiar a Microsoft Word.
+- Se organizó la documentación bajo el índice solicitado: introducción, arquitectura, funcionalidades, instalación, historial y mantenimiento.
+- Se integró la evolución observada en Git/GitHub, incluyendo `main` como V1 y `version-2` como rama activa de la migración V2.
+
+---
+## Fase 5E — Documentar proceso completo V2 y estado GitHub (2026-05-29)
+
+### Documentación
+- Se agregó `docs/V2_PROCESS.md` como bitácora integral desde V1 hasta Railway V2.
+- Se documentó el estado observado en GitHub: `main` como rama default V1 y `version-2` como rama activa con la migración V2.
+- Se registraron los endpoints, variables Railway, comandos de validación, riesgos y próximos pasos para demo docente pública.
+
+---
+## Fase 5D — Configurar Railway para arrancar backend V2 (2026-05-29)
+
+### Corrección de deploy
+- Se identificó que Railway estaba ejecutando V1 porque `Dockerfile` corría `pnpm start` y el script raíz `start` apuntaba a `NODE_ENV=production tsx server/index.ts`.
+- Se cambió el script raíz `start` para arrancar V2 con `packages/backend/src/index.ts`.
+- Se actualizó el healthcheck de Railway de `/api/health` a `/api/v2/health` para detectar que el servicio público realmente levantó V2.
+- El backend V2 ahora prioriza `process.env.PORT` antes de `V2_PORT`, para usar el puerto inyectado por Railway.
+- En producción, el backend V2 sirve el build `dist/` de Vite desde el mismo servicio cuando existe `dist/index.html`.
+
+### Configuración esperada en Railway
+- `DATABASE_PROVIDER=postgres`
+- `DATABASE_URL=<URL PostgreSQL Railway>`
+- `JWT_SECRET=<secreto_seguro>`
+- `NODE_ENV=production`
+- `LOG_LEVEL=info`
+
+### Endpoints públicos V2
+- `GET /api/v2/health`
+- `GET /api/v2/ready`
+- `POST /api/v2/auth/register`
+- `POST /api/v2/auth/login`
+- `GET /api/v2/auth/me`
+
+---
+## Fase 5C — Preparar V2 pública con registro y PostgreSQL (2026-05-29)
+
+### Documentación
+- Se aclaró el flujo local V2 con PostgreSQL (`docker compose`, Drizzle push/seed, backend V2 en `3004` y frontend Vite).
+- Se documentaron las variables mínimas para Railway V2: `DATABASE_PROVIDER`, `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV`, `LOG_LEVEL`, `GEMINI_API_KEY` opcional y `VITE_API_URL` solo si frontend/backend están separados.
+- Se dejó explícito que el frontend V2 usa `src/lib/api/client.ts` con `http://localhost:3004` en desarrollo y same-origin en producción salvo override.
+
+### Confirmación funcional
+- `POST /api/v2/auth/register` crea usuarios en PostgreSQL vía `DatabaseProvider`, hashea passwords con bcrypt, asigna `role: user` y devuelve JWT.
+- `POST /api/v2/auth/login` valida credenciales con bcrypt y devuelve JWT.
+- `GET /api/v2/auth/me` valida JWT y devuelve el perfil autenticado.
+
+---
 ## Fase 0A — Infraestructura del monorepo (2026-05-27)
 
 ### Añadido

@@ -13,30 +13,40 @@ Resumen rápido
 - Asegúrate de que la rama `version-2` esté empujada a `origin`.
 - Railway debe conectar al repo y seleccionar la rama `version-2`.
 
-2) Build / Start (recomendación)
-Railway usa `railway.json` que indica `builder: DOCKERFILE` y `dockerfilePath: Dockerfile`.
-- Usar el `Dockerfile` del repo es válido (construye todo el monorepo y corre `pnpm start` por defecto).
-- Sin embargo, el `Dockerfile` por defecto ejecuta `pnpm start` (V1 server: `server/index.ts`). Para exponer V2 en el nuevo servicio tienes dos opciones:
+2) Build / Start (configuración actual del repo)
+Railway usa `railway.json` con `builder: DOCKERFILE` y `dockerfilePath: Dockerfile`.
 
-  Opción A (recomendada, sin tocar Dockerfile):
-  - En Railway, en la sección "Start Command" del servicio, overridear el comando con:
+Corrección Fase 5D:
+- Antes, `Dockerfile` ejecutaba `pnpm start` y el script raíz `start` apuntaba a `NODE_ENV=production tsx server/index.ts`; por eso Railway arrancaba V1, mostraba `Database: SQLite` y exponía `/api/health`.
+- Ahora, el script raíz `start` arranca V2 con `packages/backend/src/index.ts`.
+- `railway.json` usa el healthcheck V2: `/api/v2/health`.
 
-    ```bash
-    pnpm --filter @minamatch/backend exec tsx src/index.ts
-    ```
+Comando final que Railway ejecuta desde el Dockerfile:
 
-    Esto arranca el backend V2 (`packages/backend/src/index.ts`) en el contenedor.
+```bash
+pnpm start
+```
 
-  Opción B (si prefieres imagen dedicada V2):
-  - Crear un `Dockerfile.v2` que establezca `CMD ["pnpm", "--filter", "@minamatch/backend", "exec", "tsx", "src/index.ts"]` y usarlo en `railway.json` o en la configuración del servicio.
+Ese comando resuelve a:
 
-3) Comandos exactos para Railway (build & run)
-- Build: Railway construirá la imagen según `Dockerfile` (no debes cambiarlo necesariamente).
-- Start (override en Railway):
+```bash
+NODE_ENV=production pnpm --filter @minamatch/backend exec tsx src/index.ts
+```
 
-  ```bash
-  pnpm --filter @minamatch/backend exec tsx src/index.ts
-  ```
+El backend V2 escucha en `process.env.PORT || process.env.V2_PORT || 3004`. En Railway debe usar el `PORT` inyectado por la plataforma (normalmente `8080` dentro del contenedor), por lo que no es necesario fijar `V2_PORT` en producción.
+
+3) Endpoints públicos V2 esperados
+Con el arranque anterior, el servicio público debe responder en:
+
+```text
+GET  /api/v2/health
+GET  /api/v2/ready
+POST /api/v2/auth/register
+POST /api/v2/auth/login
+GET  /api/v2/auth/me
+```
+
+El backend V2 también puede servir el `dist/` de Vite en producción desde el mismo contenedor si el build generó `dist/index.html`; esto permite usar una sola URL pública para frontend + API.
 
 4) Migraciones Drizzle (one-off)
 - Antes de arrancar la app en producción, ejecutar migraciones en la base de datos de Railway (one-off job):
@@ -59,8 +69,8 @@ Railway usa `railway.json` que indica `builder: DOCKERFILE` y `dockerfilePath: D
   ```
 
 5) Validación / Healthcheck
-- `railway.json` tiene `healthcheckPath: /api/health` por defecto; para V2 puedes usar `/api/v2/health` o mantener `/api/health` si tu Dockerfile/entry expone ambos.
-- Para validar manualmente (after migration & start):
+- `railway.json` debe mantener `healthcheckPath: /api/v2/health` para confirmar que arrancó V2, no V1.
+- Para validar manualmente después de migrar y arrancar:
 
   ```bash
   curl -sS https://<tu-dominio>.railway.app/api/v2/health | jq .
@@ -107,14 +117,14 @@ Nota: preferir same-origin (servir frontend y backend juntos) evita necesidad de
 - Agregar plugin PostgreSQL y esperar la base de datos provisionada.
 - Añadir las variables de entorno (poner `DATABASE_URL` obtenido).
 - Ejecutar one-off: `pnpm db:migrate` y `pnpm db:seed` (si quieres datos de ejemplo).
-- Configurar Start Command (override): `pnpm --filter @minamatch/backend exec tsx src/index.ts`.
-- Iniciar el servicio y observar logs.
+- No necesitas override de Start Command si Railway usa el `Dockerfile` y este repo actualizado: `pnpm start` ya arranca V2.
+- Iniciar el servicio y observar logs; debe aparecer `MinaMatch V2 API started`, no `Database: SQLite`.
 - Validar `GET /api/v2/health` y `GET /api/v2/ready`.
 
 9) Observaciones y límites
 - No modificar la instancia V1 en Railway; crear un servicio independiente.
 - Asegúrate que `JWT_SECRET` sea distinto al de dev y lo guardes de forma segura.
-- Si deseas que Railway haga builds estáticos del frontend y lo sirva desde el mismo contenedor, el `Dockerfile` actual ya ejecuta `pnpm run build` (Vite). Asegúrate que el backend V2 sirva `dist` en producción; en `packages/backend/src/index.ts` hay lógica para servir assets si `NODE_ENV=production`.
+- Railway compila el frontend con `pnpm run build` en el `Dockerfile`; el backend V2 sirve `dist/` en producción desde `packages/backend/src/app.ts` cuando existe `dist/index.html`.
 
 10) Comandos de validación (local)
 - Lint:
